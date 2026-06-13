@@ -1,0 +1,22 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    network_mode: host
+    volumes:
+      - ./data:/app/data
+      - ./bot:/app/bot
+      - ./web:/app/web
+    command: python -m bot.main
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    network_mode: host
+    volumes:
+      - ./data:/app/data
+      - ./bot:/app/bot
+      - ./web:/app/web
+    command: uvicorn web.app:app --host 0.0.0.0 --port 8080

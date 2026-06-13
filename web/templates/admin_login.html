@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Вход — {{ brand_name }}{% endblock %}
+
+{% block header %}
+<div class="header">
+  <div class="brand">
+    <div class="brand-icon">🔒</div>
+    <div>
+      <h1>Вход администратора</h1>
+      <p>{{ brand_name }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:400px;margin:40px auto">
+  {% if request.query_params.get('error') %}
+  <div class="alert alert-error">Неверный пароль</div>
+  {% endif %}
+  <form method="post" action="/admin/login">
+    <label for="password">Пароль администратора</label>
+    <input type="password" name="password" id="password" required autofocus placeholder="••••••••">
+    <button class="btn btn-block" type="submit">Войти</button>
+  </form>
+</div>
+{% endblock %}

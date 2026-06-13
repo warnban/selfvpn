@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Пополнение — {{ brand_name }}{% endblock %}
+
+{% block header %}
+<div class="header">
+  <div class="brand">
+    <div class="brand-icon">💳</div>
+    <div>
+      <h1>Пополнение</h1>
+      <p>{{ daily_price }} ₽/сутки</p>
+    </div>
+  </div>
+  <a class="link" href="/cabinet/{{ user.cabinet_token }}">← Кабинет</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <form method="post" enctype="multipart/form-data">
+    <label for="days">Срок подписки</label>
+    <select name="days" id="days" required onchange="updatePrice()">
+      {% for d in presets %}
+      <option value="{{ d }}">{{ d }} дней — {{ (d * daily_price)|int }} ₽</option>
+      {% endfor %}
+      {% for d in [15, 45, 180] %}
+      <option value="{{ d }}">{{ d }} дней — {{ (d * daily_price)|int }} ₽</option>
+      {% endfor %}
+    </select>
+
+    <div class="stat-box" style="margin-bottom:20px">
+      <div class="value" id="priceHint">—</div>
+      <div class="label">К оплате</div>
+    </div>
+
+    <div class="card" style="background:rgba(7,11,20,0.5);padding:16px;margin-bottom:20px">
+      <h2 style="margin-bottom:12px">Реквизиты</h2>
+      <div class="row"><span>Карта</span><strong>{{ payment_card }}</strong></div>
+      <div class="row"><span>Банк</span><span>{{ payment_bank }}</span></div>
+      <div class="row"><span>Получатель</span><span>{{ payment_holder }}</span></div>
+    </div>
+
+    <label for="screenshot">Скриншот перевода</label>
+    <input type="file" name="screenshot" id="screenshot" accept="image/*" required>
+
+    <button class="btn btn-block" type="submit">Отправить заявку</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const daily = {{ daily_price }};
+function updatePrice() {
+  const days = document.getElementById('days').value;
+  document.getElementById('priceHint').textContent = Math.round(days * daily) + ' ₽';
+}
+updatePrice();
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Админ — {{ brand_name }}{% endblock %}
+
+{% block header %}
+<div class="header">
+  <div class="brand">
+    <div class="brand-icon">⚙️</div>
+    <div>
+      <h1>Админ-панель</h1>
+      <p>{{ brand_name }}</p>
+    </div>
+  </div>
+  <a class="logout" href="/admin/logout">Выйти →</a>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if request.query_params.get('credited') %}
+<div class="alert alert-success">✅ Баланс начислен, пользователь уведомлён в Telegram.</div>
+{% endif %}
+{% if request.query_params.get('approved') %}
+<div class="alert alert-success">✅ Платёж одобрен.</div>
+{% endif %}
+{% if request.query_params.get('rejected') %}
+<div class="alert alert-success">Платёж отклонён.</div>
+{% endif %}
+
+<div class="admin-stats">
+  <div class="stat-box">
+    <div class="value">{{ users|length }}</div>
+    <div class="label">Пользователей</div>
+  </div>
+  <div class="stat-box">
+    <div class="value">{{ active_vpn }}</div>
+    <div class="label">Устройств</div>
+  </div>
+  <div class="stat-box">
+    <div class="value">{{ pending_payments|length }}</div>
+    <div class="label">Заявок</div>
+  </div>
+  <div class="stat-box">
+    <div class="value">{{ daily_price }} ₽</div>
+    <div class="label">Тариф/день</div>
+  </div>
+</div>
+
+{% if pending_payments %}
+<div class="card">
+  <h2>💳 Заявки на оплату</h2>
+  {% for row in pending_payments %}
+  {% set p = row.payment %}
+  {% set pu = row.user %}
+  <div class="payment-card">
+    <div class="user-card-header">
+      <div>
+        <div class="user-name">Заявка #{{ p.id }}</div>
+        <div class="user-meta">
+          {% if pu and pu.username %}@{{ pu.username }}{% elif pu %}ID {{ pu.telegram_id }}{% endif %}
+          · {{ p.source }} · {{ p.days_purchased or '?' }} дн.
+        </div>
+      </div>
+      <strong style="font-size:1.2rem">{{ "%.0f"|format(p.amount_rub) }} ₽</strong>
+    </div>
+    {% if p.screenshot_path %}
+    <p><a class="link" href="{{ p.screenshot_path }}" target="_blank">📷 Открыть скриншот</a></p>
+    {% endif %}
+    <div class="btn-group">
+      <form method="post" action="/admin/payments/{{ p.id }}/approve">
+        <button class="btn btn-success btn-sm" type="submit">✅ Одобрить</button>
+      </form>
+      <form method="post" action="/admin/payments/{{ p.id }}/reject">
+        <button class="btn btn-danger btn-sm" type="submit">❌ Отклонить</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>👥 Пользователи</h2>
+  {% for u in users %}
+  <div class="user-card">
+    <div class="user-card-header">
+      <div>
+        <div class="user-name">{% if u.username %}@{{ u.username }}{% else %}ID {{ u.telegram_id }}{% endif %}</div>
+        <div class="user-meta">{{ u.first_name or '—' }} · баланс {{ "%.0f"|format(u.balance_rub) }} ₽</div>
+      </div>
+      {% set dc = device_counts.get(u.id, 0) %}
+      {% if dc > 0 %}
+      <span class="badge badge-ok">{{ dc }} устр.</span>
+      {% else %}
+      <span class="badge badge-off">—</span>
+      {% endif %}
+    </div>
+    <a class="link" href="/cabinet/{{ u.cabinet_token }}" target="_blank">Открыть кабинет →</a>
+
+    <form class="credit-form" method="post" action="/admin/users/{{ u.id }}/credit">
+      <label>Начислить баланс (₽)</label>
+      <input type="number" name="amount" min="1" step="1" required placeholder="100">
+      <label>Комментарий для Telegram</label>
+      <input type="text" name="comment" placeholder="Бонус, компенсация...">
+      <button class="btn btn-block" type="submit">💰 Начислить</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+[Unit]
+Description=SelfVPN Telegram Bot
+After=network.target amnezia-panel.service
+Wants=amnezia-panel.service
+
+[Service]
+WorkingDirectory=/opt/selfvpn
+EnvironmentFile=/opt/selfvpn/.env
+ExecStart=/opt/selfvpn/venv/bin/python -m bot.main
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
