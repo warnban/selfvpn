@@ -35,6 +35,18 @@ class Settings(BaseSettings):
     uploads_dir: str = "./data/uploads"
     brand_name: str = "VPN от дяди Сани"
 
+    freekassa_merchant_id: int = 0
+    freekassa_secret_1: str = ""
+    freekassa_secret_2: str = ""
+
+    @property
+    def freekassa_enabled(self) -> bool:
+        return bool(
+            self.freekassa_merchant_id
+            and self.freekassa_secret_1
+            and self.freekassa_secret_2
+        )
+
     @property
     def admin_id_list(self) -> list[int]:
         if not self.admin_ids.strip():
@@ -53,6 +65,15 @@ class Settings(BaseSettings):
 
     def admin_url(self) -> str:
         return f"{self.web_base_url.rstrip('/')}/admin"
+
+    def payment_notify_url(self) -> str:
+        return f"{self.web_base_url.rstrip('/')}/payment/notify"
+
+    def payment_success_url(self) -> str:
+        return f"{self.web_base_url.rstrip('/')}/payment/success"
+
+    def payment_fail_url(self) -> str:
+        return f"{self.web_base_url.rstrip('/')}/payment/fail"
 
 
 settings = Settings()

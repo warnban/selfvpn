@@ -19,8 +19,10 @@
 {% endblock %}
 
 {% block content %}
-{% if request.query_params.get('paid') %}
-<div class="alert alert-success">✅ Заявка отправлена. Баланс пополнится после проверки администратором.</div>
+{% if request.query_params.get('paid') == 'ok' %}
+<div class="alert alert-success">✅ Оплата принята. Баланс обновится автоматически в течение минуты.</div>
+{% elif request.query_params.get('paid') == 'fail' %}
+<div class="alert alert-error">⚠️ Оплата не прошла. Попробуйте ещё раз.</div>
 {% endif %}
 {% if request.query_params.get('err') %}
 <div class="alert alert-error">⚠️ {{ request.query_params.get('err') }}</div>

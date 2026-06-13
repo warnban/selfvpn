@@ -16,7 +16,7 @@
 
 {% block content %}
 <div class="card">
-  <form method="post" enctype="multipart/form-data">
+  <form method="post">
     <label for="days">Срок подписки</label>
     <select name="days" id="days" required onchange="updatePrice()">
       {% for d in presets %}
@@ -32,17 +32,12 @@
       <div class="label">К оплате</div>
     </div>
 
-    <div class="card" style="background:rgba(7,11,20,0.5);padding:16px;margin-bottom:20px">
-      <h2 style="margin-bottom:12px">Реквизиты</h2>
-      <div class="row"><span>Карта</span><strong>{{ payment_card }}</strong></div>
-      <div class="row"><span>Банк</span><span>{{ payment_bank }}</span></div>
-      <div class="row"><span>Получатель</span><span>{{ payment_holder }}</span></div>
-    </div>
-
-    <label for="screenshot">Скриншот перевода</label>
-    <input type="file" name="screenshot" id="screenshot" accept="image/*" required>
-
-    <button class="btn btn-block" type="submit">Отправить заявку</button>
+    {% if freekassa_enabled %}
+    <p class="muted" style="margin-bottom:20px">Сумма считается по тарифу {{ daily_price }} ₽/сутки. После оплаты баланс зачислится автоматически — без скриншотов и ожидания админа.</p>
+    <button class="btn btn-block" type="submit">Оплатить</button>
+    {% else %}
+    <div class="alert alert-error">Онлайн-оплата временно недоступна. Обратитесь к администратору.</div>
+    {% endif %}
   </form>
 </div>
 {% endblock %}

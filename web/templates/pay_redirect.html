@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Переход к оплате — {{ brand_name }}{% endblock %}
+
+{% block header %}
+<div class="header">
+  <div class="brand">
+    <div class="brand-icon">💳</div>
+    <div>
+      <h1>Оплата</h1>
+      <p>{{ days }} дн. · {{ "%.0f"|format(amount) }} ₽</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <p class="muted">Сейчас откроется страница Freekassa…</p>
+  <form id="fkForm" method="get" action="{{ pay_url }}">
+    {% for name, value in fields.items() %}
+    <input type="hidden" name="{{ name }}" value="{{ value }}">
+    {% endfor %}
+    <button class="btn btn-block" type="submit">Перейти к оплате</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('fkForm').submit();
+</script>
+{% endblock %}

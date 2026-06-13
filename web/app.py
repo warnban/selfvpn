@@ -1,10 +1,8 @@
-import uuid
+from collections.abc import AsyncGenerator
 from pathlib import Path
 
-from collections.abc import AsyncGenerator
-
-from fastapi import Depends, FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import Depends, FastAPI, Form, Request
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
@@ -35,6 +33,13 @@ from bot.services.users import (
     reject_payment,
 )
 
+from bot.services.freekassa import (
+    FREEKASSA_PAY_URL,
+    get_client_ip,
+    is_freekassa_ip,
+    payment_form_fields,
+    verify_notification_signature,
+)
 from bot.messages import AMNEZIA_ANDROID, AMNEZIA_IOS
 
 app = FastAPI(title="SelfVPN Cabinet")
@@ -154,15 +159,16 @@ async def cabinet_pay_form(request: Request, token: str, session: AsyncSession =
             "payment_card": settings.payment_card,
             "payment_bank": settings.payment_bank,
             "payment_holder": settings.payment_holder,
+            "freekassa_enabled": settings.freekassa_enabled,
         },
     )
 
 
 @app.post("/cabinet/{token}/pay")
 async def cabinet_pay_submit(
+    request: Request,
     token: str,
     days: int = Form(...),
-    screenshot: UploadFile = File(...),
     session: AsyncSession = Depends(get_db),
 ):
     user = await get_user_by_cabinet_token(session, token)
@@ -172,22 +178,124 @@ async def cabinet_pay_submit(
     if days < 1 or days > 365:
         return RedirectResponse(f"/cabinet/{token}/pay", status_code=303)
 
-    amount = settings.price_for_days(days)
-    ext = Path(screenshot.filename or "img.jpg").suffix or ".jpg"
-    filename = f"{uuid.uuid4().hex}{ext}"
-    dest = uploads_path / filename
-    content = await screenshot.read()
-    dest.write_bytes(content)
+    if not settings.freekassa_enabled:
+        return RedirectResponse(f"/cabinet/{token}/pay", status_code=303)
 
-    await create_payment_request(
+    amount = settings.price_for_days(days)
+    payment = await create_payment_request(
         session,
         user,
         amount,
         days,
-        source="web",
-        screenshot_path=f"/uploads/{filename}",
+        source="freekassa",
     )
-    return RedirectResponse(f"/cabinet/{token}?paid=1", status_code=303)
+    fields = payment_form_fields(
+        amount,
+        str(payment.id),
+        cabinet_token=user.cabinet_token,
+    )
+    return templates.TemplateResponse(
+        request,
+        "pay_redirect.html",
+        {
+            "pay_url": FREEKASSA_PAY_URL,
+            "fields": fields,
+            "amount": amount,
+            "days": days,
+        },
+    )
+
+
+async def _resolve_cabinet_token(request: Request, session: AsyncSession) -> str | None:
+    token = request.query_params.get("us_token")
+    if token:
+        return token
+
+    order_id = request.query_params.get("MERCHANT_ORDER_ID") or request.query_params.get("o")
+    if not order_id:
+        return None
+
+    try:
+        payment = await session.get(Payment, int(order_id))
+    except (ValueError, TypeError):
+        return None
+    if not payment:
+        return None
+
+    user = await session.get(User, payment.user_id)
+    return user.cabinet_token if user else None
+
+
+@app.api_route("/payment/notify", methods=["GET", "POST"])
+async def payment_notify(request: Request, session: AsyncSession = Depends(get_db)):
+    if not settings.freekassa_enabled:
+        return PlainTextResponse("disabled", status_code=503)
+
+    client_ip = get_client_ip(request)
+    if not is_freekassa_ip(client_ip):
+        return PlainTextResponse("hacking attempt!", status_code=403)
+
+    params = dict(await request.form()) if request.method == "POST" else dict(request.query_params)
+    merchant_id = params.get("MERCHANT_ID", "")
+    amount = params.get("AMOUNT", "")
+    order_id = params.get("MERCHANT_ORDER_ID", "")
+    signature = params.get("SIGN", "")
+
+    if not merchant_id or not amount or not order_id or not signature:
+        return PlainTextResponse("missing params", status_code=400)
+
+    if str(merchant_id) != str(settings.freekassa_merchant_id):
+        return PlainTextResponse("wrong merchant", status_code=400)
+
+    if not verify_notification_signature(merchant_id, amount, order_id, signature):
+        return PlainTextResponse("wrong sign", status_code=400)
+
+    try:
+        payment = await session.get(Payment, int(order_id))
+    except (ValueError, TypeError):
+        return PlainTextResponse("bad order", status_code=400)
+
+    if not payment:
+        return PlainTextResponse("order not found", status_code=404)
+
+    if payment.status == PaymentStatus.APPROVED.value:
+        return PlainTextResponse("YES")
+
+    if abs(float(amount) - payment.amount_rub) > 0.01:
+        return PlainTextResponse("wrong amount", status_code=400)
+
+    user = await approve_payment(session, payment)
+    await notify_payment_approved(
+        user.telegram_id,
+        payment.amount_rub,
+        payment.days_purchased or 0,
+        user.balance_rub,
+    )
+    return PlainTextResponse("YES")
+
+
+@app.get("/payment/success", response_class=HTMLResponse)
+async def payment_success(request: Request, session: AsyncSession = Depends(get_db)):
+    token = await _resolve_cabinet_token(request, session)
+    if token:
+        return RedirectResponse(f"/cabinet/{token}?paid=ok", status_code=303)
+    return templates.TemplateResponse(
+        request,
+        "payment_result.html",
+        {"success": True, "title": "Оплата прошла", "message": "Баланс пополнен. Вернитесь в личный кабинет по сохранённой ссылке."},
+    )
+
+
+@app.get("/payment/fail", response_class=HTMLResponse)
+async def payment_fail(request: Request, session: AsyncSession = Depends(get_db)):
+    token = await _resolve_cabinet_token(request, session)
+    if token:
+        return RedirectResponse(f"/cabinet/{token}?paid=fail", status_code=303)
+    return templates.TemplateResponse(
+        request,
+        "payment_result.html",
+        {"success": False, "title": "Оплата не прошла", "message": "Платёж отменён или произошла ошибка. Попробуйте снова из личного кабинета."},
+    )
 
 
 @app.get("/admin/login", response_class=HTMLResponse)

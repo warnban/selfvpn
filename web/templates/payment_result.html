@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — {{ brand_name }}{% endblock %}
+
+{% block header %}
+<div class="header">
+  <div class="brand">
+    <div class="brand-icon">{% if success %}✅{% else %}❌{% endif %}</div>
+    <div>
+      <h1>{{ title }}</h1>
+      <p>{{ brand_name }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <p>{{ message }}</p>
+</div>
+{% endblock %}
