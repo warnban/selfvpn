@@ -1,52 +1,114 @@
 {% extends "base.html" %}
 {% block title %}Админ — {{ brand_name }}{% endblock %}
+{% block body_class %}theme-admin{% endblock %}
+{% block wrap_class %}wrap--admin{% endblock %}
 
 {% block header %}
-<div class="header">
+<header class="header">
   <div class="brand">
-    <div class="brand-icon">⚙️</div>
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+    </div>
     <div>
-      <h1>Админ-панель</h1>
-      <p>{{ brand_name }}</p>
+      <h1>VPN Admin</h1>
+      <p>{{ brand_name }} · Панель управления</p>
     </div>
   </div>
-  <a class="logout" href="/admin/logout">Выйти →</a>
-</div>
+  <div class="header-status">
+    <span class="status-dot"></span>
+    <span>{{ users|length }} пользователей</span>
+    <a class="logout" href="/admin/logout">Выйти</a>
+  </div>
+</header>
 {% endblock %}
 
 {% block content %}
 {% if request.query_params.get('credited') %}
-<div class="alert alert-success">✅ Баланс начислен, пользователь уведомлён в Telegram.</div>
+<div class="alert alert-success">Баланс начислен, пользователь уведомлён в Telegram.</div>
 {% endif %}
 {% if request.query_params.get('approved') %}
-<div class="alert alert-success">✅ Платёж одобрен.</div>
+<div class="alert alert-success">Платёж одобрен.</div>
 {% endif %}
 {% if request.query_params.get('rejected') %}
 <div class="alert alert-success">Платёж отклонён.</div>
 {% endif %}
 
+{% set active_users = namespace(count=0) %}
+{% for u in users %}
+  {% if device_counts.get(u.id, 0) > 0 and u.balance_rub > 0 %}
+    {% set active_users.count = active_users.count + 1 %}
+  {% endif %}
+{% endfor %}
+
 <div class="admin-stats">
-  <div class="stat-box">
-    <div class="value">{{ users|length }}</div>
-    <div class="label">Пользователей</div>
+  <div class="admin-stat-card">
+    <div class="admin-stat-top">
+      <span class="admin-stat-label">Пользователей</span>
+      <div class="admin-stat-icon" style="background:rgba(124,110,245,0.12)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#7c6ef5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <div class="admin-stat-value">{{ users|length }}</div>
+      <div class="admin-stat-sub">{{ active_users.count }} с активным VPN</div>
+    </div>
   </div>
-  <div class="stat-box">
-    <div class="value">{{ active_vpn }}</div>
-    <div class="label">Устройств</div>
+
+  <div class="admin-stat-card">
+    <div class="admin-stat-top">
+      <span class="admin-stat-label">Устройств</span>
+      <div class="admin-stat-icon" style="background:rgba(90,180,240,0.12)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#5ab4f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <div class="admin-stat-value">{{ active_vpn }}</div>
+      <div class="admin-stat-sub">
+        {% if users|length > 0 %}≈{{ "%.1f"|format(active_vpn / users|length) }} на пользователя{% else %}—{% endif %}
+      </div>
+    </div>
   </div>
-  <div class="stat-box">
-    <div class="value">{{ pending_payments|length }}</div>
-    <div class="label">Заявок</div>
+
+  <div class="admin-stat-card">
+    <div class="admin-stat-top">
+      <span class="admin-stat-label">Заявок</span>
+      <div class="admin-stat-icon" style="background:rgba(240,160,90,0.12)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#f0a05a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <div class="admin-stat-value">{{ pending_payments|length }}</div>
+      <div class="admin-stat-sub">ожидают проверки</div>
+    </div>
   </div>
-  <div class="stat-box">
-    <div class="value">{{ daily_price }} ₽</div>
-    <div class="label">Тариф/день</div>
+
+  <div class="admin-stat-card">
+    <div class="admin-stat-top">
+      <span class="admin-stat-label">Тариф</span>
+      <div class="admin-stat-icon" style="background:rgba(93,232,200,0.12)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#5de8c8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <div class="admin-stat-value">{{ daily_price }} ₽</div>
+      <div class="admin-stat-sub">за устройство / сутки</div>
+    </div>
   </div>
 </div>
 
 {% if pending_payments %}
-<div class="card">
-  <h2>💳 Заявки на оплату</h2>
+<section class="pending-section">
+  <h2>Заявки на оплату</h2>
   {% for row in pending_payments %}
   {% set p = row.payment %}
   {% set pu = row.user %}
@@ -59,50 +121,231 @@
           · {{ p.source }} · {{ p.days_purchased or '?' }} дн.
         </div>
       </div>
-      <strong style="font-size:1.2rem">{{ "%.0f"|format(p.amount_rub) }} ₽</strong>
+      <span class="payment-amount">{{ "%.0f"|format(p.amount_rub) }} ₽</span>
     </div>
     {% if p.screenshot_path %}
-    <p><a class="link" href="{{ p.screenshot_path }}" target="_blank">📷 Открыть скриншот</a></p>
+    <p style="margin-bottom:12px"><a class="link" href="{{ p.screenshot_path }}" target="_blank">Открыть скриншот</a></p>
     {% endif %}
     <div class="btn-group">
       <form method="post" action="/admin/payments/{{ p.id }}/approve">
-        <button class="btn btn-success btn-sm" type="submit">✅ Одобрить</button>
+        <button class="btn btn-success btn-sm" type="submit">Одобрить</button>
       </form>
       <form method="post" action="/admin/payments/{{ p.id }}/reject">
-        <button class="btn btn-danger btn-sm" type="submit">❌ Отклонить</button>
+        <button class="btn btn-danger btn-sm" type="submit">Отклонить</button>
       </form>
     </div>
   </div>
   {% endfor %}
-</div>
+</section>
 {% endif %}
 
-<div class="card">
-  <h2>👥 Пользователи</h2>
-  {% for u in users %}
-  <div class="user-card">
-    <div class="user-card-header">
-      <div>
-        <div class="user-name">{% if u.username %}@{{ u.username }}{% else %}ID {{ u.telegram_id }}{% endif %}</div>
-        <div class="user-meta">{{ u.first_name or '—' }} · баланс {{ "%.0f"|format(u.balance_rub) }} ₽</div>
-      </div>
-      {% set dc = device_counts.get(u.id, 0) %}
-      {% if dc > 0 %}
-      <span class="badge badge-ok">{{ dc }} устр.</span>
-      {% else %}
-      <span class="badge badge-off">—</span>
-      {% endif %}
+<div class="table-card">
+  <div class="table-head">
+    <div>
+      <h2>Пользователи</h2>
+      <p><span id="userCount">{{ users|length }}</span> из {{ users|length }}</p>
     </div>
-    <a class="link" href="/cabinet/{{ u.cabinet_token }}" target="_blank">Открыть кабинет →</a>
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+      </svg>
+      <input type="text" class="search-input" id="userSearch" placeholder="Поиск по юзернейму..." autocomplete="off">
+    </div>
+  </div>
 
-    <form class="credit-form" method="post" action="/admin/users/{{ u.id }}/credit">
-      <label>Начислить баланс (₽)</label>
-      <input type="number" name="amount" min="1" step="1" required placeholder="100">
-      <label>Комментарий для Telegram</label>
-      <input type="text" name="comment" placeholder="Бонус, компенсация...">
-      <button class="btn btn-block" type="submit">💰 Начислить</button>
+  <div class="table-scroll">
+    <table class="admin-table" id="usersTable">
+      <thead>
+        <tr>
+          <th>Пользователь</th>
+          <th>Устройств</th>
+          <th>Статус</th>
+          <th>Баланс</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        {% set dc = device_counts.get(u.id, 0) %}
+        {% set display = u.first_name or '—' %}
+        {% set handle = ('@' ~ u.username) if u.username else ('ID ' ~ u.telegram_id) %}
+        {% set search_text = (handle ~ ' ' ~ display)|lower %}
+        {% if dc > 0 and u.balance_rub > 0 %}
+          {% set status_label = 'Активен' %}
+          {% set status_class = 'badge-ok' %}
+        {% elif u.balance_rub > 0 %}
+          {% set status_label = 'Баланс есть' %}
+          {% set status_class = 'badge-warn' %}
+        {% else %}
+          {% set status_label = 'Неактивен' %}
+          {% set status_class = 'badge-off' %}
+        {% endif %}
+        <tr data-search="{{ search_text }}">
+          <td>
+            <div class="user-cell">
+              <div class="user-avatar" style="background:rgba(124,110,245,0.12);color:#7c6ef5">
+                {{ (display[0] if display != '—' else '?')|upper }}
+              </div>
+              <div>
+                <div class="user-display">{{ display }}</div>
+                <div class="user-handle">{{ handle }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="devices-cell">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+              </svg>
+              {{ dc }}
+            </div>
+          </td>
+          <td><span class="badge {{ status_class }}">{{ status_label }}</span></td>
+          <td>
+            <span class="balance-cell {% if u.balance_rub <= 0 %}balance-zero{% endif %}">
+              {{ "%.0f"|format(u.balance_rub) }} ₽
+            </span>
+          </td>
+          <td>
+            <button type="button" class="btn-credit" data-user-id="{{ u.id }}" data-user-handle="{{ handle }}" data-user-balance="{{ u.balance_rub|int }}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Баланс
+            </button>
+            <a class="link" href="/cabinet/{{ u.cabinet_token }}" target="_blank" style="display:block;margin-top:8px;font-size:0.75rem">Кабинет →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-empty" id="tableEmpty" hidden>Пользователи не найдены</div>
+</div>
+
+<div class="modal-backdrop" id="creditModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-labelledby="creditModalTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="creditModalTitle">Начислить баланс</h3>
+        <p class="modal-user" id="creditModalUser"></p>
+      </div>
+      <button type="button" class="modal-close" id="creditModalClose" aria-label="Закрыть">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <form method="post" id="creditForm" class="credit-form">
+      <div class="modal-field">
+        <label>Текущий баланс</label>
+        <div class="modal-balance" id="creditCurrentBalance">0 ₽</div>
+      </div>
+
+      <div class="modal-field">
+        <label for="creditAmount">Сумма начисления (₽)</label>
+        <input type="number" name="amount" id="creditAmount" min="1" step="1" required placeholder="например, 500">
+      </div>
+
+      <div class="preset-row">
+        {% for preset in [100, 300, 500, 1000] %}
+        <button type="button" class="preset-btn" data-amount="{{ preset }}">{{ preset }}</button>
+        {% endfor %}
+      </div>
+
+      <div class="modal-field">
+        <label for="creditComment">Комментарий для Telegram</label>
+        <input type="text" name="comment" id="creditComment" placeholder="Бонус, компенсация...">
+      </div>
+
+      <div class="modal-preview" id="creditPreview" hidden>
+        <span>После начисления:</span>
+        <span id="creditAfterBalance">0 ₽</span>
+      </div>
+
+      <button class="btn btn-block" type="submit">Начислить</button>
     </form>
   </div>
-  {% endfor %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const modal = document.getElementById('creditModal');
+const form = document.getElementById('creditForm');
+const amountInput = document.getElementById('creditAmount');
+const preview = document.getElementById('creditPreview');
+const afterBalance = document.getElementById('creditAfterBalance');
+let currentBalance = 0;
+
+function openCreditModal(userId, handle, balance) {
+  currentBalance = balance;
+  form.action = `/admin/users/${userId}/credit`;
+  document.getElementById('creditModalUser').textContent = handle;
+  document.getElementById('creditCurrentBalance').textContent = `${balance.toLocaleString('ru')} ₽`;
+  amountInput.value = '';
+  document.getElementById('creditComment').value = '';
+  preview.hidden = true;
+  document.querySelectorAll('.preset-btn').forEach((b) => b.classList.remove('active'));
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  amountInput.focus();
+}
+
+function closeCreditModal() {
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+document.querySelectorAll('.btn-credit').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    openCreditModal(
+      btn.dataset.userId,
+      btn.dataset.userHandle,
+      parseInt(btn.dataset.userBalance, 10) || 0
+    );
+  });
+});
+
+document.getElementById('creditModalClose').addEventListener('click', closeCreditModal);
+modal.addEventListener('click', (e) => { if (e.target === modal) closeCreditModal(); });
+
+document.querySelectorAll('.preset-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    amountInput.value = btn.dataset.amount;
+    document.querySelectorAll('.preset-btn').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    updatePreview();
+  });
+});
+
+function updatePreview() {
+  const amount = parseInt(amountInput.value, 10);
+  if (amount > 0) {
+    preview.hidden = false;
+    afterBalance.textContent = `${(currentBalance + amount).toLocaleString('ru')} ₽`;
+  } else {
+    preview.hidden = true;
+  }
+}
+
+amountInput.addEventListener('input', updatePreview);
+
+const searchInput = document.getElementById('userSearch');
+const rows = Array.from(document.querySelectorAll('#usersTable tbody tr'));
+const userCount = document.getElementById('userCount');
+const tableEmpty = document.getElementById('tableEmpty');
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  let visible = 0;
+  rows.forEach((row) => {
+    const match = !q || row.dataset.search.includes(q);
+    row.hidden = !match;
+    if (match) visible += 1;
+  });
+  userCount.textContent = visible;
+  tableEmpty.hidden = visible > 0;
+});
+</script>
 {% endblock %}

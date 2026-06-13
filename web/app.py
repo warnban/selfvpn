@@ -48,6 +48,8 @@ app.add_middleware(SessionMiddleware, secret_key=settings.web_secret_key)
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 templates.env.globals["brand_name"] = settings.brand_name
+templates.env.globals["support_tg"] = settings.support_tg_handle
+templates.env.globals["support_tg_url"] = settings.support_tg_url()
 templates.env.globals["amnezia_android"] = AMNEZIA_ANDROID
 templates.env.globals["amnezia_ios"] = AMNEZIA_IOS
 templates.env.globals["platform_label"] = platform_label

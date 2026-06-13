@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     admin_web_password: str = "admin"
     uploads_dir: str = "./data/uploads"
     brand_name: str = "VPN от дяди Сани"
+    support_tg: str = "aleblanche"
 
     freekassa_merchant_id: int = 0
     freekassa_secret_1: str = ""
@@ -77,6 +78,14 @@ class Settings(BaseSettings):
 
     def payment_fail_url(self) -> str:
         return f"{self.web_base_url.rstrip('/')}/payment/fail"
+
+    @property
+    def support_tg_handle(self) -> str:
+        return self.support_tg.lstrip("@")
+
+    def support_tg_url(self) -> str:
+        handle = self.support_tg_handle
+        return f"https://t.me/{handle}" if handle else ""
 
 
 settings = Settings()

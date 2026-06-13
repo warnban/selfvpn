@@ -153,7 +153,8 @@ async def show_help(message: Message) -> None:
         "• «📱 Мои устройства» — добавляй/удаляй устройства\n"
         "• Каждое устройство = +тариф за сутки\n"
         "• «💳 Пополнить» — ссылка на оплату в личном кабинете\n"
-        "• «👥 Рефералы» — приглашай друзей, получай бонус",
+        "• «👥 Рефералы» — приглашай друзей, получай бонус\n\n"
+        f"🆘 Поддержка: <a href=\"{settings.support_tg_url()}\">@{settings.support_tg_handle}</a>",
         reply_markup=app_download_kb(),
         parse_mode="HTML",
         disable_web_page_preview=True,
