@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.config import settings
 from bot.keyboards.main import (
     app_download_kb,
-    device_created_kb,
+    device_conf_kb,
+    device_conf_resend_kb,
     device_del_confirm_kb,
     devices_kb,
     platform_choice_kb,
@@ -31,6 +32,7 @@ async def _send_device_conf(
     bot: Bot,
     chat_id: int,
     device,
+    user,
     *,
     reply_markup=None,
 ) -> None:
@@ -40,12 +42,14 @@ async def _send_device_conf(
         await bot.send_message(chat_id, f"❌ {exc}", parse_mode="HTML")
         return
 
-    doc = BufferedInputFile(conf.encode("utf-8"), filename=conf_filename(device.name))
+    filename = conf_filename(device.name, device.id)
+    doc = BufferedInputFile(conf.encode("utf-8"), filename=filename)
+    markup = reply_markup or device_conf_kb(user.cabinet_token, device.id)
     await bot.send_document(
         chat_id=chat_id,
         document=doc,
-        caption=vpn_key_instructions(device.name),
-        reply_markup=reply_markup,
+        caption=vpn_key_instructions(device.name, device.platform),
+        reply_markup=markup,
         parse_mode="HTML",
     )
 
@@ -168,7 +172,8 @@ async def cb_device_create(callback: CallbackQuery, session: AsyncSession) -> No
         callback.message.bot,
         callback.message.chat.id,
         device,
-        reply_markup=device_created_kb(),
+        user,
+        reply_markup=device_conf_kb(user.cabinet_token, device.id),
     )
 
 
@@ -189,7 +194,8 @@ async def cb_device_key(callback: CallbackQuery, session: AsyncSession) -> None:
         callback.message.bot,
         callback.message.chat.id,
         device,
-        reply_markup=app_download_kb(),
+        user,
+        reply_markup=device_conf_resend_kb(user.cabinet_token, device.id),
     )
     await callback.answer()
 

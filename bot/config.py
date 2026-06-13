@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     def cabinet_url(self, token: str) -> str:
         return f"{self.web_base_url.rstrip('/')}/cabinet/{token}"
 
+    def conf_download_url(self, token: str, device_id: int) -> str:
+        return f"{self.cabinet_url(token)}/devices/{device_id}/conf"
+
     def cabinet_pay_url(self, token: str) -> str:
         return f"{self.web_base_url.rstrip('/')}/cabinet/{token}/pay"
 

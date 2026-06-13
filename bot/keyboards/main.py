@@ -1,5 +1,6 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 
+from bot.config import settings
 from bot.messages import AMNEZIAWG_ANDROID, AMNEZIAWG_APPLE, AMNEZIAWG_WINDOWS
 
 
@@ -48,12 +49,25 @@ def app_download_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=_app_download_rows())
 
 
-def device_created_kb() -> InlineKeyboardMarkup:
-    """Показывается после создания ключа: скачать приложение + продолжить."""
-    rows = _app_download_rows()
+def device_conf_kb(cabinet_token: str, device_id: int) -> InlineKeyboardMarkup:
+    """Кнопки после выдачи .conf: браузер + скачать AmneziaWG."""
+    conf_url = settings.conf_download_url(cabinet_token, device_id)
+    rows = [[InlineKeyboardButton(text="🌐 Скачать через браузер", url=conf_url)]]
+    rows.extend(_app_download_rows())
     rows.append([InlineKeyboardButton(text="➕ Добавить ещё", callback_data="dev_add")])
     rows.append([InlineKeyboardButton(text="📱 К моим устройствам", callback_data="dev_list")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def device_conf_resend_kb(cabinet_token: str, device_id: int) -> InlineKeyboardMarkup:
+    conf_url = settings.conf_download_url(cabinet_token, device_id)
+    rows = [[InlineKeyboardButton(text="🌐 Скачать через браузер", url=conf_url)]]
+    rows.extend(_app_download_rows())
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def device_created_kb(cabinet_token: str, device_id: int) -> InlineKeyboardMarkup:
+    return device_conf_kb(cabinet_token, device_id)
 
 
 def devices_kb(devices: list) -> InlineKeyboardMarkup:

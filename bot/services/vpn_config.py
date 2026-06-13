@@ -16,7 +16,10 @@ def vpn_link_to_conf(vpn_link: str) -> str:
     return conf.strip() + "\n"
 
 
-def conf_filename(device_name: str) -> str:
-    safe = re.sub(r"[^\w\-]+", "_", device_name.strip(), flags=re.UNICODE)
+def conf_filename(device_name: str = "", device_id: int | None = None) -> str:
+    """ASCII-имя файла — так Android надёжнее находит его в «Загрузках»."""
+    if device_id is not None:
+        return f"daddyvpn_{device_id}.conf"
+    safe = re.sub(r"[^\w\-]+", "_", device_name.strip(), flags=re.ASCII)
     safe = safe.strip("_") or "vpn"
     return f"{safe}.conf"

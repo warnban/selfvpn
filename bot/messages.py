@@ -24,13 +24,30 @@ def app_download_links_short_html() -> str:
     )
 
 
-def amneziawg_import_steps() -> str:
+def amneziawg_import_steps(platform: str = "") -> str:
+    if platform == "android":
+        return (
+            "<b>📱 Android — так проще всего:</b>\n"
+            "1. Нажми кнопку <b>«🌐 Скачать через браузер»</b> ниже\n"
+            "2. Файл сохранится в папку <b>Загрузки</b> на телефоне\n"
+            "3. AmneziaWG → ➕ → «Импорт из файла» → <b>Загрузки</b> → "
+            "<code>daddyvpn_….conf</code>\n\n"
+            "⚠️ Файл <i>из Telegram</i> часто лежит в подпапке "
+            "<b>Загрузки/Telegram</b> — AmneziaWG её не показывает. "
+            "Поэтому лучше скачивать через браузер."
+        )
+    if platform in ("ios", "mac"):
+        return (
+            "1. Нажми «🌐 Скачать через браузер» или открой файл из Telegram\n"
+            "2. Сохрани <code>.conf</code> в «Файлы» / Files\n"
+            "3. AmneziaWG → ➕ → «Import from file» → выбери файл\n"
+            "4. Подключись к VPN"
+        )
     return (
         "1. Установи <b>AmneziaWG</b> (ссылки ниже)\n"
-        "2. Открой приложение → нажми <b>➕</b>\n"
-        "3. Выбери <b>«Импорт из файла»</b> / «Import from file»\n"
-        "4. Укажи полученный файл <code>.conf</code>\n"
-        "5. Подключись к VPN"
+        "2. Скачай <code>.conf</code> через кнопку «🌐 Скачать через браузер»\n"
+        "3. AmneziaWG → ➕ → «Импорт из файла» → выбери файл\n"
+        "4. Подключись к VPN"
     )
 
 
@@ -77,13 +94,13 @@ def amnezia_setup_steps() -> str:
     )
 
 
-def vpn_key_instructions(device_name: str = "") -> str:
+def vpn_key_instructions(device_name: str = "", platform: str = "") -> str:
     title = f"✅ <b>Устройство «{device_name}» готово!</b>" if device_name else "✅ <b>VPN готов!</b>"
     return (
         f"{title}\n\n"
-        "📎 Файл конфигурации <b>.conf</b> — в этом сообщении.\n\n"
-        "<b>Как подключить в AmneziaWG:</b>\n"
-        f"{amneziawg_import_steps()}\n\n"
-        "⚠️ Один файл — для одного устройства. Для другого телефона/ПК добавь ещё устройство.\n\n"
+        "📎 Файл <code>.conf</code> — вложение выше.\n"
+        "На Android надёжнее скачать через кнопку <b>«🌐 Скачать через браузер»</b>.\n\n"
+        f"{amneziawg_import_steps(platform)}\n\n"
+        "⚠️ Один файл — для одного устройства.\n\n"
         f"Нет приложения? {app_download_links_short_html()}"
     )

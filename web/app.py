@@ -165,7 +165,7 @@ async def cabinet_device_conf(
     except ValueError as exc:
         return PlainTextResponse(str(exc), status_code=400)
 
-    filename = conf_filename(device.name)
+    filename = conf_filename(device.name, device.id)
     return Response(
         content=conf,
         media_type="application/octet-stream",
