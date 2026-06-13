@@ -9,7 +9,7 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import is_admin, settings
-from bot.keyboards.main import main_menu, news_confirm_kb
+from bot.keyboards.main import menu_for, news_confirm_kb
 from bot.services.users import list_all_users
 
 router = Router()
@@ -20,7 +20,7 @@ class AdminNewsStates(StatesGroup):
     waiting_text = State()
 
 
-@router.message(F.text == "ADM PANEL")
+@router.message(F.text.in_({"⚙️ ADM PANEL", "ADM PANEL"}))
 async def admin_panel_link(message: Message) -> None:
     if not is_admin(message.from_user.id):
         return
@@ -28,14 +28,13 @@ async def admin_panel_link(message: Message) -> None:
     url = settings.admin_url()
     await message.answer(
         f"⚙️ <b>Админ-панель</b>\n\n"
-        f"<a href=\"{url}\">{url}</a>\n\n"
-        "Вход по паролю из <code>ADMIN_WEB_PASSWORD</code> в .env",
+        f"<a href=\"{url}\">{url}</a>",
         parse_mode="HTML",
         disable_web_page_preview=True,
     )
 
 
-@router.message(F.text == "Новость")
+@router.message(F.text.in_({"📢 Новость", "Новость"}))
 async def admin_news_start(message: Message, state: FSMContext) -> None:
     if not is_admin(message.from_user.id):
         return
@@ -56,7 +55,7 @@ async def admin_news_cancel_cmd(message: Message, state: FSMContext) -> None:
         return
 
     await state.clear()
-    await message.answer("Рассылка отменена.", reply_markup=main_menu(is_admin=True))
+    await message.answer("Рассылка отменена.", reply_markup=menu_for(message.from_user.id))
 
 
 @router.message(AdminNewsStates.waiting_text, F.text)
@@ -65,6 +64,10 @@ async def admin_news_preview(message: Message, state: FSMContext, session: Async
         return
 
     text = message.text.strip()
+    if text in {"⚙️ ADM PANEL", "ADM PANEL", "📢 Новость", "Новость", "📱 Мои устройства"}:
+        await message.answer("Это кнопка меню, а не текст новости. Напиши новость или /cancel")
+        return
+
     if not text:
         await message.answer("Текст пустой. Напиши новость или /cancel")
         return
@@ -97,7 +100,7 @@ async def admin_news_cancel_cb(callback: CallbackQuery, state: FSMContext) -> No
     await state.clear()
     await callback.message.edit_text("Рассылка отменена.")
     await callback.answer()
-    await callback.message.answer("Меню:", reply_markup=main_menu(is_admin=True))
+    await callback.message.answer("Меню:", reply_markup=menu_for(callback.from_user.id))
 
 
 @router.callback_query(F.data == "news_send")
@@ -140,6 +143,6 @@ async def admin_news_send(
         f"✅ Рассылка завершена.\n"
         f"Доставлено: <b>{sent}</b>\n"
         f"Не доставлено: <b>{failed}</b>",
-        reply_markup=main_menu(is_admin=True),
+        reply_markup=menu_for(callback.from_user.id),
         parse_mode="HTML",
     )

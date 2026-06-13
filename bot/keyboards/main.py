@@ -10,8 +10,14 @@ def main_menu(*, is_admin: bool = False) -> ReplyKeyboardMarkup:
         [KeyboardButton(text="👥 Рефералы"), KeyboardButton(text="ℹ️ Помощь")],
     ]
     if is_admin:
-        rows.append([KeyboardButton(text="ADM PANEL"), KeyboardButton(text="Новость")])
+        rows.append([KeyboardButton(text="⚙️ ADM PANEL"), KeyboardButton(text="📢 Новость")])
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
+
+
+def menu_for(telegram_id: int) -> ReplyKeyboardMarkup:
+    from bot.config import is_admin
+
+    return main_menu(is_admin=is_admin(telegram_id))
 
 
 def news_confirm_kb() -> InlineKeyboardMarkup:

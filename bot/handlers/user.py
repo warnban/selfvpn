@@ -3,8 +3,8 @@ from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.config import is_admin, settings
-from bot.keyboards.main import app_download_kb, main_menu
+from bot.config import settings
+from bot.keyboards.main import app_download_kb, menu_for
 from bot.messages import amnezia_setup_steps
 from bot.services.devices import count_devices, days_left_for, user_daily_cost
 from bot.services.users import count_referrals, get_user_by_telegram_id, register_user
@@ -55,7 +55,7 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
             f"<a href=\"{cabinet_link}\">{cabinet_link}</a>\n\n"
             "Чтобы подключиться — открой «📱 Мои устройства» и добавь устройство."
         )
-        await message.answer(intro, reply_markup=main_menu(is_admin=is_admin(message.from_user.id)), parse_mode="HTML")
+        await message.answer(intro, reply_markup=menu_for(message.from_user.id), parse_mode="HTML")
         await message.answer(
             amnezia_setup_steps(),
             reply_markup=app_download_kb(),
@@ -71,7 +71,27 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
             f"📱 Устройств: <b>{devices}</b> (~{left} дн.)\n\n"
             f"🌐 <a href=\"{cabinet_link}\">Личный кабинет</a>"
         )
-        await message.answer(text, reply_markup=main_menu(is_admin=is_admin(message.from_user.id)), parse_mode="HTML")
+        await message.answer(text, reply_markup=menu_for(message.from_user.id), parse_mode="HTML")
+
+
+@router.message(Command("menu"))
+async def cmd_menu(message: Message) -> None:
+    """Обновить клавиатуру (если кнопки устарели)."""
+    await message.answer("Меню обновлено 👇", reply_markup=menu_for(message.from_user.id))
+
+
+@router.message(F.text.in_({"🔐 Подключить VPN", "Подключить VPN"}))
+async def legacy_connect_vpn(message: Message, session: AsyncSession) -> None:
+    """Старая кнопка — перенаправляем в «Мои устройства»."""
+    from bot.handlers.devices import my_devices
+
+    await message.answer(
+        "Кнопка «Подключить VPN» устарела.\n"
+        "Открываю «📱 Мои устройства»…\n"
+        "Нажми /menu если меню не обновилось.",
+        reply_markup=menu_for(message.from_user.id),
+    )
+    await my_devices(message, session)
 
 
 @router.message(F.text == "🌐 Личный кабинет")
