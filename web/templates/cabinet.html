@@ -56,17 +56,18 @@
   {% for d in devices %}
   <div class="device">
     <div class="device-head">
-      <strong>{{ platform_label(d.platform) }} — {{ d.name }}</strong>
+      <strong>{{ platform_label(d.platform) }}</strong>
       <form method="post" action="/cabinet/{{ user.cabinet_token }}/devices/{{ d.id }}/remove"
             onsubmit="return confirm('Удалить устройство «{{ d.name }}»? Ключ перестанет работать.');">
         <button class="btn btn-danger btn-sm" type="submit">🗑 Удалить</button>
       </form>
     </div>
-    <a class="btn btn-secondary btn-sm" href="/cabinet/{{ user.cabinet_token }}/devices/{{ d.id }}/conf">⬇️ Скачать .conf</a>
+    <textarea class="key-box" id="key{{ d.id }}" readonly rows="3">{{ d.vpn_link }}</textarea>
+    <button type="button" class="btn btn-secondary btn-sm copy-btn" data-target="key{{ d.id }}">📋 Скопировать ключ</button>
   </div>
   {% endfor %}
   {% else %}
-  <p class="muted">У вас пока нет устройств. Добавьте — и получите файл конфигурации для AmneziaWG.</p>
+  <p class="muted">У вас пока нет устройств. Добавьте — и получите ключ для Amnezia.</p>
   {% endif %}
 
   {% if device_count < max_devices %}
@@ -84,17 +85,13 @@
   {% endif %}
 
   <ol class="steps" style="margin-top:16px">
-    <li>Скачайте <strong>AmneziaWG</strong> (ссылки ниже)</li>
-    <li>Нажмите <strong>⬇️ Скачать .conf</strong> — файл попадёт в «Загрузки»</li>
-    <li>В AmneziaWG: <strong>➕</strong> → «Импорт из файла» → папка <strong>Загрузки</strong></li>
-    <li>Подключитесь к VPN</li>
+    <li>Скачайте <strong>AmneziaVPN</strong> (ссылки ниже)</li>
+    <li>Откройте приложение → <strong>➕</strong> → «Введите ключ»</li>
+    <li>Вставьте ключ устройства и нажмите <strong>Подключить</strong></li>
   </ol>
-  <p class="muted">На Android файл из Telegram часто лежит в подпапке «Загрузки/Telegram» — AmneziaWG её не видит. Скачивайте через кнопку выше.</p>
   <div class="app-links">
-    <a href="{{ amneziawg_android }}" target="_blank" rel="noopener">📱 Android</a>
-    <a href="{{ amneziawg_apple }}" target="_blank" rel="noopener">🍎 iPhone/iPad</a>
-    <a href="{{ amneziawg_apple }}" target="_blank" rel="noopener">💻 macOS</a>
-    <a href="{{ amneziawg_windows }}" target="_blank" rel="noopener">🖥 Windows</a>
+    <a href="{{ amnezia_android }}" target="_blank" rel="noopener">📱 Android</a>
+    <a href="{{ amnezia_ios }}" target="_blank" rel="noopener">🍎 iPhone</a>
   </div>
 </div>
 
@@ -106,4 +103,52 @@
 </div>
 
 <p class="muted" style="text-align:center;margin-top:24px">🔖 Сохраните страницу в закладки — доступ без Telegram</p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function copyKey(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const text = (el.value || el.innerText || '').trim();
+  const okLabel = '✅ Скопировано!';
+  const original = btn.textContent;
+
+  function showOk() {
+    btn.textContent = okLabel;
+    setTimeout(() => { btn.textContent = original; }, 2000);
+  }
+
+  // Clipboard API — только на HTTPS/localhost
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showOk();
+      return;
+    } catch (e) { /* fallback ниже */ }
+  }
+
+  // HTTP: execCommand или выделение textarea
+  try {
+    if (el.select) {
+      el.focus();
+      el.select();
+      el.setSelectionRange(0, text.length);
+    }
+    const copied = document.execCommand('copy');
+    if (copied) {
+      showOk();
+      return;
+    }
+  } catch (e) { /* ignore */ }
+
+  // Последний вариант — ключ уже выделен, пользователь жмёт Ctrl+C
+  btn.textContent = 'Выделено — нажми Ctrl+C (или долгое нажатие → Копировать)';
+  setTimeout(() => { btn.textContent = original; }, 4000);
+}
+
+document.querySelectorAll('.copy-btn').forEach((btn) => {
+  btn.addEventListener('click', () => copyKey(btn.dataset.target, btn));
+});
+</script>
 {% endblock %}

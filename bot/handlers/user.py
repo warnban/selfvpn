@@ -57,12 +57,6 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
             parse_mode="HTML",
             disable_web_page_preview=True,
         )
-        await message.answer(
-            "📲 <b>Скачать AmneziaWG</b> — удобные кнопки:",
-            reply_markup=app_download_kb(),
-            parse_mode="HTML",
-            disable_web_page_preview=True,
-        )
     else:
         devices = await count_devices(session, user)
         left = await days_left_for(session, user)

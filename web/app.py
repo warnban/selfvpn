@@ -2,7 +2,7 @@ from collections.abc import AsyncGenerator
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.sessions import SessionMiddleware
 
 from bot.config import settings
-from bot.database.models import Device, Payment, PaymentStatus, User
+from bot.database.models import Payment, PaymentStatus, User
 from bot.database.session import async_session, init_db
 from bot.services.notify import notify_balance_credited, notify_payment_approved, notify_payment_rejected
 from bot.services.devices import (
@@ -40,17 +40,15 @@ from bot.services.freekassa import (
     payment_form_fields,
     verify_notification_signature,
 )
-from bot.messages import AMNEZIAWG_ANDROID, AMNEZIAWG_APPLE, AMNEZIAWG_WINDOWS
-from bot.services.vpn_config import conf_filename, vpn_link_to_conf
+from bot.messages import AMNEZIA_ANDROID, AMNEZIA_IOS
 
 app = FastAPI(title="SelfVPN Cabinet")
 app.add_middleware(SessionMiddleware, secret_key=settings.web_secret_key)
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 templates.env.globals["brand_name"] = settings.brand_name
-templates.env.globals["amneziawg_android"] = AMNEZIAWG_ANDROID
-templates.env.globals["amneziawg_apple"] = AMNEZIAWG_APPLE
-templates.env.globals["amneziawg_windows"] = AMNEZIAWG_WINDOWS
+templates.env.globals["amnezia_android"] = AMNEZIA_ANDROID
+templates.env.globals["amnezia_ios"] = AMNEZIA_IOS
 templates.env.globals["platform_label"] = platform_label
 templates.env.globals["max_devices"] = settings.max_devices
 
@@ -144,33 +142,6 @@ async def cabinet_device_remove(
         return RedirectResponse("/", status_code=303)
     await remove_device(session, user, device_id)
     return RedirectResponse(f"/cabinet/{token}#devices", status_code=303)
-
-
-@app.get("/cabinet/{token}/devices/{device_id}/conf")
-async def cabinet_device_conf(
-    token: str,
-    device_id: int,
-    session: AsyncSession = Depends(get_db),
-):
-    user = await get_user_by_cabinet_token(session, token)
-    if not user:
-        return RedirectResponse("/", status_code=303)
-
-    device = await session.get(Device, device_id)
-    if not device or device.user_id != user.id or not device.vpn_link:
-        return PlainTextResponse("Устройство не найдено", status_code=404)
-
-    try:
-        conf = vpn_link_to_conf(device.vpn_link)
-    except ValueError as exc:
-        return PlainTextResponse(str(exc), status_code=400)
-
-    filename = conf_filename(device.name, device.id)
-    return Response(
-        content=conf,
-        media_type="application/octet-stream",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
 
 
 @app.get("/cabinet/{token}/pay", response_class=HTMLResponse)

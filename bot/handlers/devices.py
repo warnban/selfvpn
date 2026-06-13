@@ -1,13 +1,12 @@
-from aiogram import Bot, F, Router
+from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import BufferedInputFile, CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
 from bot.keyboards.main import (
     app_download_kb,
-    device_conf_kb,
-    device_conf_resend_kb,
+    device_created_kb,
     device_del_confirm_kb,
     devices_kb,
     platform_choice_kb,
@@ -23,35 +22,8 @@ from bot.services.devices import (
     user_daily_cost,
 )
 from bot.services.users import get_user_by_telegram_id
-from bot.services.vpn_config import conf_filename, vpn_link_to_conf
 
 router = Router()
-
-
-async def _send_device_conf(
-    bot: Bot,
-    chat_id: int,
-    device,
-    user,
-    *,
-    reply_markup=None,
-) -> None:
-    try:
-        conf = vpn_link_to_conf(device.vpn_link)
-    except ValueError as exc:
-        await bot.send_message(chat_id, f"❌ {exc}", parse_mode="HTML")
-        return
-
-    filename = conf_filename(device.name, device.id)
-    doc = BufferedInputFile(conf.encode("utf-8"), filename=filename)
-    markup = reply_markup or device_conf_kb(user.cabinet_token, device.id)
-    await bot.send_document(
-        chat_id=chat_id,
-        document=doc,
-        caption=vpn_key_instructions(device.name, device.platform),
-        reply_markup=markup,
-        parse_mode="HTML",
-    )
 
 
 async def _safe_edit(message, text: str, reply_markup=None) -> None:
@@ -166,14 +138,8 @@ async def cb_device_create(callback: CallbackQuery, session: AsyncSession) -> No
 
     await _safe_edit(
         callback.message,
-        f"✅ Устройство «{device.name}» создано. Отправляю файл конфигурации…",
-    )
-    await _send_device_conf(
-        callback.message.bot,
-        callback.message.chat.id,
-        device,
-        user,
-        reply_markup=device_conf_kb(user.cabinet_token, device.id),
+        vpn_key_instructions(device.vpn_link, device.name),
+        device_created_kb(),
     )
 
 
@@ -190,12 +156,10 @@ async def cb_device_key(callback: CallbackQuery, session: AsyncSession) -> None:
         await callback.answer("Устройство не найдено", show_alert=True)
         return
 
-    await _send_device_conf(
-        callback.message.bot,
-        callback.message.chat.id,
-        device,
-        user,
-        reply_markup=device_conf_resend_kb(user.cabinet_token, device.id),
+    await callback.message.answer(
+        vpn_key_instructions(device.vpn_link, device.name),
+        reply_markup=app_download_kb(),
+        parse_mode="HTML",
     )
     await callback.answer()
 
