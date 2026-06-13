@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
 from bot.keyboards.main import app_download_kb, menu_for
-from bot.messages import amnezia_setup_steps
+from bot.messages import amnezia_setup_steps, new_user_welcome
 from bot.services.devices import count_devices, days_left_for, user_daily_cost
 from bot.services.users import count_referrals, get_user_by_telegram_id, register_user
 
@@ -42,23 +42,18 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
     name = message.from_user.first_name or "друг"
 
     if is_new:
-        intro = (
-            f"👋 Привет, <b>{name}</b>!\n\n"
-            f"🎁 Пробный доступ: <b>{settings.trial_days} дня</b> "
-            f"({settings.trial_balance_rub:.0f} ₽ на балансе)\n"
-            f"📅 Тариф: <b>{settings.daily_price_rub:.0f} ₽/сутки</b> за каждое устройство\n"
+        intro = new_user_welcome(
+            name,
+            settings.brand_name,
+            cabinet_link,
+            trial_days=settings.trial_days,
+            trial_balance=settings.trial_balance_rub,
+            daily_price=settings.daily_price_rub,
+            referral_ok=bool(referrer_tid and user.referrer_id),
         )
-        if referrer_tid and user.referrer_id:
-            intro += f"👥 Реферальная ссылка сработала — спасибо!\n"
-        intro += (
-            f"\n🌐 <b>Личный кабинет</b> (работает без Telegram):\n"
-            f"<a href=\"{cabinet_link}\">{cabinet_link}</a>\n\n"
-            "Чтобы подключиться — открой «📱 Мои устройства» и добавь устройство."
-        )
-        await message.answer(intro, reply_markup=menu_for(message.from_user.id), parse_mode="HTML")
         await message.answer(
-            amnezia_setup_steps(),
-            reply_markup=app_download_kb(),
+            intro,
+            reply_markup=menu_for(message.from_user.id),
             parse_mode="HTML",
             disable_web_page_preview=True,
         )

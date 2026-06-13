@@ -5,6 +5,39 @@ AMNEZIA_IOS = "https://apps.apple.com/app/amneziavpn/id1600529900"
 AMNEZIA_SITE = "https://amnezia.org"
 
 
+def new_user_welcome(
+    name: str,
+    brand_name: str,
+    cabinet_link: str,
+    *,
+    trial_days: int,
+    trial_balance: float,
+    daily_price: float,
+    referral_ok: bool = False,
+) -> str:
+    text = (
+        f"👋 Привет, <b>{name}</b>!\n"
+        f"Добро пожаловать в <b>{brand_name}</b>.\n\n"
+        f"🛡 <b>Что это:</b> быстрый VPN для телефона и компьютера. "
+        f"Платишь только за дни, когда пользуешься — без подписок и лишних кнопок.\n\n"
+        f"🎁 Пробный доступ: <b>{trial_days} дня</b> ({trial_balance:.0f} ₽ на балансе)\n"
+        f"📅 Тариф: <b>{daily_price:.0f} ₽/сутки</b> за каждое устройство\n"
+    )
+    if referral_ok:
+        text += "👥 Реферальная ссылка сработала — спасибо!\n"
+    text += (
+        "\n<b>📲 Как подключить:</b>\n"
+        "1️⃣ Скачай <b>AmneziaVPN</b>:\n"
+        f'   • <a href="{AMNEZIA_ANDROID}">Android</a>\n'
+        f'   • <a href="{AMNEZIA_IOS}">iPhone</a>\n'
+        "2️⃣ В боте: «📱 Мои устройства» → добавь устройство → получишь ключ\n"
+        "3️⃣ В Amnezia: ➕ → «Вставить ключ» → Подключить\n\n"
+        f"🌐 <b>Личный кабинет</b> (баланс, оплата, ключи):\n"
+        f'<a href="{cabinet_link}">{cabinet_link}</a>'
+    )
+    return text
+
+
 def amnezia_setup_steps() -> str:
     return (
         "<b>📲 Как подключить VPN</b>\n\n"
