@@ -1,39 +1,73 @@
 #!/bin/bash
-# Восстановление сайта при 502 Bad Gateway.
+# Восстановление сайта при 502 — только systemd, без Docker (docker-compose 1.29 ломается).
 set -e
 cd /opt/selfvpn
 
 echo "============================================"
-echo "  SelfVPN — fix 502"
+echo "  SelfVPN — fix 502 (systemd)"
 echo "============================================"
 
-git pull --ff-only 2>/dev/null || true
+git pull --ff-only 2>/dev/null || git checkout -- deploy/fix-502.sh 2>/dev/null; git pull --ff-only 2>/dev/null || true
 
 echo ""
-echo "=== Порт 8080 ==="
-if command -v ss >/dev/null 2>&1; then
-  ss -tlnp | grep ':8080' || echo "никто не слушает 8080"
-fi
+echo "=== 1. Python venv ==="
+apt-get install -y -qq python3 python3-venv python3-pip
+[ -d venv ] || python3 -m venv venv
+./venv/bin/pip install -q -r requirements.txt
 
 echo ""
-echo "=== Пробуем веб через systemd (рекомендуется) ==="
-chmod +x deploy/install-web-host.sh
-bash deploy/install-web-host.sh
+echo "=== 2. Проверка импорта ==="
+./venv/bin/python -c "from web.app import app; print('import OK')"
 
 echo ""
-echo "=== Nginx ==="
-systemctl reload nginx 2>/dev/null || service nginx reload 2>/dev/null || true
+echo "=== 3. Убрать сломанный Docker-web ==="
+docker-compose stop web 2>/dev/null || true
+docker-compose rm -f web 2>/dev/null || true
+docker compose stop web 2>/dev/null || true
+docker compose rm -f web 2>/dev/null || true
+docker ps -aq --filter "name=selfvpn_web" | xargs -r docker rm -f 2>/dev/null || true
 
-PUBLIC=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: daddyvpn.site" http://127.0.0.1/admin/login 2>/dev/null || echo "000")
-echo "Через nginx (daddyvpn.site): HTTP $PUBLIC"
-
-if [ "$PUBLIC" = "200" ]; then
-  echo ""
-  echo "Готово — 502 должна уйти. Обнови страницу в браузере."
+echo ""
+echo "=== 4. systemd selfvpn-web ==="
+if [ -f deploy/selfvpn-web.service ]; then
+  cp deploy/selfvpn-web.service /etc/systemd/system/selfvpn-web.service
 else
-  echo ""
-  echo "Локально web OK, но nginx всё ещё $PUBLIC."
-  echo "Проверь конфиг:"
-  echo "  grep -R proxy_pass /etc/nginx/sites-enabled/"
-  echo "Должно быть: proxy_pass http://127.0.0.1:8080;"
+  cat > /etc/systemd/system/selfvpn-web.service << 'EOF'
+[Unit]
+Description=SelfVPN Web Cabinet (FastAPI)
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/selfvpn
+EnvironmentFile=/opt/selfvpn/.env
+ExecStart=/opt/selfvpn/venv/bin/uvicorn web.app:app --host 127.0.0.1 --port 8080
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
 fi
+
+systemctl daemon-reload
+systemctl enable selfvpn-web
+systemctl restart selfvpn-web
+sleep 2
+systemctl status selfvpn-web --no-pager || true
+
+echo ""
+echo "=== 5. Проверка ==="
+CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/health 2>/dev/null || echo "000")
+echo "/health → HTTP $CODE"
+
+if [ "$CODE" != "200" ]; then
+  echo ""
+  echo "FAIL. Логи:"
+  journalctl -u selfvpn-web -n 40 --no-pager
+  exit 1
+fi
+
+systemctl reload nginx 2>/dev/null || true
+echo ""
+echo "OK — сайт должен работать: https://daddyvpn.site"
+echo "Логи: journalctl -u selfvpn-web -f"
