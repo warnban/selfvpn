@@ -89,6 +89,29 @@ async def admin_credit_balance(
     return user
 
 
+async def cancel_pending_freekassa_for_user(
+    session: AsyncSession,
+    user: User,
+    *,
+    comment: str = "Отменено — новая попытка оплаты",
+) -> None:
+    result = await session.execute(
+        select(Payment).where(
+            Payment.user_id == user.id,
+            Payment.status == PaymentStatus.PENDING.value,
+            Payment.source == "freekassa",
+        )
+    )
+    payments = list(result.scalars().all())
+    if not payments:
+        return
+    for payment in payments:
+        payment.status = PaymentStatus.REJECTED.value
+        payment.processed_at = datetime.utcnow()
+        payment.admin_comment = comment
+    await session.commit()
+
+
 async def create_payment_request(
     session: AsyncSession,
     user: User,

@@ -27,6 +27,7 @@ from bot.services.users import (
     approve_payment,
     count_referrals,
     create_payment_request,
+    cancel_pending_freekassa_for_user,
     get_user_by_cabinet_token,
     get_user_by_id,
     list_all_users,
@@ -187,6 +188,7 @@ async def cabinet_pay_submit(
         return RedirectResponse(f"/cabinet/{token}/pay", status_code=303)
 
     amount = settings.price_for_days(days)
+    await cancel_pending_freekassa_for_user(session, user)
     payment = await create_payment_request(
         session,
         user,
@@ -293,6 +295,19 @@ async def payment_success(request: Request, session: AsyncSession = Depends(get_
 
 @app.get("/payment/fail", response_class=HTMLResponse)
 async def payment_fail(request: Request, session: AsyncSession = Depends(get_db)):
+    order_id = request.query_params.get("MERCHANT_ORDER_ID") or request.query_params.get("o")
+    if order_id:
+        try:
+            payment = await session.get(Payment, int(order_id))
+            if (
+                payment
+                and payment.source == "freekassa"
+                and payment.status == PaymentStatus.PENDING.value
+            ):
+                await reject_payment(session, payment, "Оплата не завершена")
+        except (ValueError, TypeError):
+            pass
+
     token = await _resolve_cabinet_token(request, session)
     if token:
         return RedirectResponse(f"/cabinet/{token}?paid=fail", status_code=303)
@@ -331,7 +346,12 @@ async def admin_dashboard(request: Request, session: AsyncSession = Depends(get_
 
     users = await list_all_users(session)
     pending = (
-        await session.execute(select(Payment).where(Payment.status == PaymentStatus.PENDING.value))
+        await session.execute(
+            select(Payment).where(
+                Payment.status == PaymentStatus.PENDING.value,
+                Payment.source != "freekassa",
+            )
+        )
     ).scalars().all()
     pending_rows = []
     for payment in pending:
@@ -396,6 +416,8 @@ async def admin_approve_payment_web(
     payment = await session.get(Payment, payment_id)
     if not payment or payment.status != PaymentStatus.PENDING.value:
         return RedirectResponse("/admin", status_code=303)
+    if payment.source == "freekassa":
+        return RedirectResponse("/admin", status_code=303)
 
     user = await approve_payment(session, payment)
     await notify_payment_approved(
@@ -418,6 +440,8 @@ async def admin_reject_payment_web(
 
     payment = await session.get(Payment, payment_id)
     if not payment or payment.status != PaymentStatus.PENDING.value:
+        return RedirectResponse("/admin", status_code=303)
+    if payment.source == "freekassa":
         return RedirectResponse("/admin", status_code=303)
 
     await reject_payment(session, payment)
