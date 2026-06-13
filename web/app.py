@@ -79,6 +79,11 @@ async def index() -> RedirectResponse:
     return RedirectResponse("/admin/login")
 
 
+@app.get("/health")
+async def health() -> PlainTextResponse:
+    return PlainTextResponse("ok")
+
+
 @app.get("/cabinet/{token}", response_class=HTMLResponse)
 async def cabinet(request: Request, token: str, session: AsyncSession = Depends(get_db)):
     user = await get_user_by_cabinet_token(session, token)

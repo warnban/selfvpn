@@ -3,28 +3,41 @@
 set -e
 cd "$(dirname "$0")/.."
 
+COMPOSE="docker-compose"
+command -v docker-compose >/dev/null 2>&1 || COMPOSE="docker compose"
+
 echo "==> git pull"
 git pull --ff-only
 
 BOT_SERVICE="selfvpn-bot"
-USE_SYSTEMD=false
+WEB_SERVICE="selfvpn-web"
+
 if systemctl is-active --quiet "$BOT_SERVICE" 2>/dev/null; then
-  USE_SYSTEMD=true
-  echo "==> бот на systemd ($BOT_SERVICE) — перезапускаем его"
+  echo "==> бот на systemd — перезапуск"
   systemctl restart "$BOT_SERVICE"
-  sleep 2
-  systemctl status "$BOT_SERVICE" --no-pager -l | head -15
-  # не даём двум ботам работать с одним токеном
-  docker-compose stop bot 2>/dev/null || true
+  $COMPOSE stop bot 2>/dev/null || true
 else
-  echo "==> бот в Docker — пересоздаём контейнеры (down + up)"
-  docker-compose down
-  docker-compose up -d
-  docker-compose ps
-  docker exec selfvpn_bot_1 test -f /app/bot/handlers/admin.py && echo "admin.py OK" || echo "ОШИБКА: admin.py не в контейнере"
+  echo "==> бот в Docker"
+  $COMPOSE up -d --build bot
 fi
 
-echo "==> web"
-docker-compose up -d web 2>/dev/null || true
+if systemctl is-enabled --quiet "$WEB_SERVICE" 2>/dev/null; then
+  echo "==> веб на systemd — перезапуск"
+  ./venv/bin/pip install -q -r requirements.txt 2>/dev/null || true
+  cp deploy/selfvpn-web.service /etc/systemd/system/selfvpn-web.service
+  systemctl daemon-reload
+  systemctl restart "$WEB_SERVICE"
+else
+  echo "==> веб в Docker"
+  $COMPOSE up -d --build web
+fi
+
+sleep 2
+CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/health || echo "000")
+if [ "$CODE" = "200" ]; then
+  echo "OK: web HTTP $CODE"
+else
+  echo "WARN: web не отвечает (HTTP $CODE). Запусти: bash deploy/fix-502.sh"
+fi
 
 echo "Готово. В Telegram: /menu"

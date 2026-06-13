@@ -1,0 +1,13 @@
+[Unit]
+Description=SelfVPN Web Cabinet (FastAPI)
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/selfvpn
+EnvironmentFile=/opt/selfvpn/.env
+ExecStart=/opt/selfvpn/venv/bin/uvicorn web.app:app --host 127.0.0.1 --port 8080
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
