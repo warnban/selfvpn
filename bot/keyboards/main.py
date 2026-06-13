@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 
-from bot.messages import AMNEZIA_ANDROID, AMNEZIA_IOS
+from bot.messages import AMNEZIAWG_ANDROID, AMNEZIAWG_APPLE, AMNEZIAWG_WINDOWS
 
 
 def main_menu(*, is_admin: bool = False) -> ReplyKeyboardMarkup:
@@ -31,29 +31,29 @@ def news_confirm_kb() -> InlineKeyboardMarkup:
     )
 
 
+def _app_download_rows() -> list[list[InlineKeyboardButton]]:
+    return [
+        [
+            InlineKeyboardButton(text="📱 Android", url=AMNEZIAWG_ANDROID),
+            InlineKeyboardButton(text="🍎 iPhone/iPad", url=AMNEZIAWG_APPLE),
+        ],
+        [
+            InlineKeyboardButton(text="🖥 Windows", url=AMNEZIAWG_WINDOWS),
+            InlineKeyboardButton(text="💻 macOS", url=AMNEZIAWG_APPLE),
+        ],
+    ]
+
+
 def app_download_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text="📱 Android", url=AMNEZIA_ANDROID),
-                InlineKeyboardButton(text="🍎 iPhone", url=AMNEZIA_IOS),
-            ],
-        ]
-    )
+    return InlineKeyboardMarkup(inline_keyboard=_app_download_rows())
 
 
 def device_created_kb() -> InlineKeyboardMarkup:
     """Показывается после создания ключа: скачать приложение + продолжить."""
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text="📱 Android", url=AMNEZIA_ANDROID),
-                InlineKeyboardButton(text="🍎 iPhone", url=AMNEZIA_IOS),
-            ],
-            [InlineKeyboardButton(text="➕ Добавить ещё", callback_data="dev_add")],
-            [InlineKeyboardButton(text="📱 К моим устройствам", callback_data="dev_list")],
-        ]
-    )
+    rows = _app_download_rows()
+    rows.append([InlineKeyboardButton(text="➕ Добавить ещё", callback_data="dev_add")])
+    rows.append([InlineKeyboardButton(text="📱 К моим устройствам", callback_data="dev_list")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def devices_kb(devices: list) -> InlineKeyboardMarkup:

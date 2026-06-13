@@ -1,8 +1,37 @@
 """Тексты бота — единое место для UX-копирайта."""
 
-AMNEZIA_ANDROID = "https://play.google.com/store/apps/details?id=org.amnezia.vpn"
-AMNEZIA_IOS = "https://apps.apple.com/app/amneziavpn/id1600529900"
-AMNEZIA_SITE = "https://amnezia.org"
+AMNEZIAWG_ANDROID = "https://play.google.com/store/apps/details?id=org.amnezia.awg"
+AMNEZIAWG_APPLE = "https://apps.apple.com/app/amneziawg/id6478942365"
+AMNEZIAWG_WINDOWS = "https://github.com/amnezia-vpn/amneziawg-windows-client/releases/latest"
+AMNEZIAWG_SITE = "https://amnezia.org"
+
+
+def app_download_links_html() -> str:
+    return (
+        f'   • <a href="{AMNEZIAWG_ANDROID}">Android</a>\n'
+        f'   • <a href="{AMNEZIAWG_APPLE}">iPhone / iPad</a>\n'
+        f'   • <a href="{AMNEZIAWG_APPLE}">macOS</a> (App Store)\n'
+        f'   • <a href="{AMNEZIAWG_WINDOWS}">Windows</a>'
+    )
+
+
+def app_download_links_short_html() -> str:
+    return (
+        f'<a href="{AMNEZIAWG_ANDROID}">Android</a> · '
+        f'<a href="{AMNEZIAWG_APPLE}">iPhone/iPad</a> · '
+        f'<a href="{AMNEZIAWG_APPLE}">macOS</a> · '
+        f'<a href="{AMNEZIAWG_WINDOWS}">Windows</a>'
+    )
+
+
+def amneziawg_import_steps() -> str:
+    return (
+        "1. Установи <b>AmneziaWG</b> (ссылки ниже)\n"
+        "2. Открой приложение → нажми <b>➕</b>\n"
+        "3. Выбери <b>«Импорт из файла»</b> / «Import from file»\n"
+        "4. Укажи полученный файл <code>.conf</code>\n"
+        "5. Подключись к VPN"
+    )
 
 
 def new_user_welcome(
@@ -27,11 +56,10 @@ def new_user_welcome(
         text += "👥 Реферальная ссылка сработала — спасибо!\n"
     text += (
         "\n<b>📲 Как подключить:</b>\n"
-        "1️⃣ Скачай <b>AmneziaVPN</b>:\n"
-        f'   • <a href="{AMNEZIA_ANDROID}">Android</a>\n'
-        f'   • <a href="{AMNEZIA_IOS}">iPhone</a>\n'
-        "2️⃣ В боте: «📱 Мои устройства» → добавь устройство → получишь ключ\n"
-        "3️⃣ В Amnezia: ➕ → «Вставить ключ» → Подключить\n\n"
+        "1️⃣ Скачай <b>AmneziaWG</b>:\n"
+        f"{app_download_links_html()}\n"
+        "2️⃣ В боте: «📱 Мои устройства» → добавь устройство → получишь файл <code>.conf</code>\n"
+        f"3️⃣ {amneziawg_import_steps()}\n\n"
         f"🌐 <b>Личный кабинет</b> (баланс, оплата, ключи):\n"
         f'<a href="{cabinet_link}">{cabinet_link}</a>'
     )
@@ -41,29 +69,21 @@ def new_user_welcome(
 def amnezia_setup_steps() -> str:
     return (
         "<b>📲 Как подключить VPN</b>\n\n"
-        "1️⃣ Скачай приложение <b>AmneziaVPN</b>:\n"
-        f'   • <a href="{AMNEZIA_ANDROID}">Android — Play Market</a>\n'
-        f'   • <a href="{AMNEZIA_IOS}">iPhone — App Store</a>\n\n'
-        "2️⃣ Открой «📱 Мои устройства» → «➕ Добавить устройство» — получишь ключ <code>vpn://...</code>\n\n"
-        "3️⃣ В Amnezia: <b>➕ Добавить VPN</b> → "
-        "<b>«Вставить ключ / Enter key»</b> → вставь ключ → Подключить\n\n"
-        "💡 Сохрани личный кабинет в закладки — там баланс и ключ, если Telegram недоступен."
+        "1️⃣ Скачай приложение <b>AmneziaWG</b>:\n"
+        f"{app_download_links_html()}\n\n"
+        "2️⃣ Открой «📱 Мои устройства» → «➕ Добавить устройство» — получишь файл <code>.conf</code>\n\n"
+        f"3️⃣ {amneziawg_import_steps()}\n\n"
+        "💡 Сохрани личный кабинет в закладки — там баланс и ключи, если Telegram недоступен."
     )
 
 
-def vpn_key_instructions(vpn_link: str, device_name: str = "") -> str:
+def vpn_key_instructions(device_name: str = "") -> str:
     title = f"✅ <b>Устройство «{device_name}» готово!</b>" if device_name else "✅ <b>VPN готов!</b>"
     return (
         f"{title}\n\n"
-        "<b>Ключ</b> (нажми, чтобы скопировать):\n"
-        f"<code>{vpn_link}</code>\n\n"
-        "<b>Дальше в приложении Amnezia:</b>\n"
-        "1. Открой AmneziaVPN\n"
-        "2. ➕ → «Вставить ключ» / «Enter key»\n"
-        "3. Вставь ключ из сообщения выше\n"
-        "4. Нажми «Подключить»\n\n"
-        "⚠️ Один ключ — для одного устройства. Для другого телефона/ПК добавь ещё устройство.\n\n"
-        f'Нет приложения? '
-        f'<a href="{AMNEZIA_ANDROID}">Android</a> · '
-        f'<a href="{AMNEZIA_IOS}">iOS</a>'
+        "📎 Файл конфигурации <b>.conf</b> — в этом сообщении.\n\n"
+        "<b>Как подключить в AmneziaWG:</b>\n"
+        f"{amneziawg_import_steps()}\n\n"
+        "⚠️ Один файл — для одного устройства. Для другого телефона/ПК добавь ещё устройство.\n\n"
+        f"Нет приложения? {app_download_links_short_html()}"
     )
