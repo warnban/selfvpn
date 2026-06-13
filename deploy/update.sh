@@ -6,7 +6,8 @@ cd "$(dirname "$0")/.."
 echo "==> git pull"
 git pull --ff-only
 
-echo "==> пересоздаём контейнеры (чтобы подхватить volume и compose)"
+echo "==> пересоздаём контейнеры (down + up — обход бага docker-compose 1.29)"
+docker-compose down
 docker-compose up -d
 
 echo "==> status"
