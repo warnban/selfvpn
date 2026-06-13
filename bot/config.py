@@ -51,5 +51,12 @@ class Settings(BaseSettings):
     def cabinet_url(self, token: str) -> str:
         return f"{self.web_base_url.rstrip('/')}/cabinet/{token}"
 
+    def admin_url(self) -> str:
+        return f"{self.web_base_url.rstrip('/')}/admin"
+
 
 settings = Settings()
+
+
+def is_admin(telegram_id: int) -> bool:
+    return telegram_id in settings.admin_id_list

@@ -10,7 +10,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 from bot.config import settings
 from bot.database.session import init_db
-from bot.handlers import devices, payment, user
+from bot.handlers import admin, devices, payment, user
 from bot.middlewares.db import DbSessionMiddleware
 from bot.services.billing import process_daily_billing
 
@@ -32,6 +32,7 @@ async def main() -> None:
 
         dp.include_router(user.router)
         dp.include_router(devices.router)
+        dp.include_router(admin.router)
         dp.include_router(payment.router)
 
         me = await bot.get_me()

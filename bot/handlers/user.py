@@ -3,7 +3,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.config import settings
+from bot.config import is_admin, settings
 from bot.keyboards.main import app_download_kb, main_menu
 from bot.messages import amnezia_setup_steps
 from bot.services.devices import count_devices, days_left_for, user_daily_cost
@@ -55,7 +55,7 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
             f"<a href=\"{cabinet_link}\">{cabinet_link}</a>\n\n"
             "Чтобы подключиться — открой «📱 Мои устройства» и добавь устройство."
         )
-        await message.answer(intro, reply_markup=main_menu(), parse_mode="HTML")
+        await message.answer(intro, reply_markup=main_menu(is_admin=is_admin(message.from_user.id)), parse_mode="HTML")
         await message.answer(
             amnezia_setup_steps(),
             reply_markup=app_download_kb(),
@@ -71,7 +71,7 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
             f"📱 Устройств: <b>{devices}</b> (~{left} дн.)\n\n"
             f"🌐 <a href=\"{cabinet_link}\">Личный кабинет</a>"
         )
-        await message.answer(text, reply_markup=main_menu(), parse_mode="HTML")
+        await message.answer(text, reply_markup=main_menu(is_admin=is_admin(message.from_user.id)), parse_mode="HTML")
 
 
 @router.message(F.text == "🌐 Личный кабинет")

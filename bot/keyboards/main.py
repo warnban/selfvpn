@@ -3,14 +3,25 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardBu
 from bot.messages import AMNEZIA_ANDROID, AMNEZIA_IOS
 
 
-def main_menu() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="📱 Мои устройства"), KeyboardButton(text="💰 Баланс")],
-            [KeyboardButton(text="💳 Пополнить"), KeyboardButton(text="🌐 Личный кабинет")],
-            [KeyboardButton(text="👥 Рефералы"), KeyboardButton(text="ℹ️ Помощь")],
-        ],
-        resize_keyboard=True,
+def main_menu(*, is_admin: bool = False) -> ReplyKeyboardMarkup:
+    rows = [
+        [KeyboardButton(text="📱 Мои устройства"), KeyboardButton(text="💰 Баланс")],
+        [KeyboardButton(text="💳 Пополнить"), KeyboardButton(text="🌐 Личный кабинет")],
+        [KeyboardButton(text="👥 Рефералы"), KeyboardButton(text="ℹ️ Помощь")],
+    ]
+    if is_admin:
+        rows.append([KeyboardButton(text="ADM PANEL"), KeyboardButton(text="Новость")])
+    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
+
+
+def news_confirm_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="✅ Отправить всем", callback_data="news_send"),
+                InlineKeyboardButton(text="❌ Отмена", callback_data="news_cancel"),
+            ]
+        ]
     )
 
 

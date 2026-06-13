@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.config import settings
+from bot.config import is_admin, settings
 from bot.database.models import Payment, PaymentStatus, User
 from bot.keyboards.main import admin_payment_kb, days_selection_kb, main_menu
 from bot.services.notify import notify_payment_approved, notify_payment_rejected
@@ -118,7 +118,7 @@ async def topup_screenshot(
     await message.answer(
         "✅ Заявка отправлена администратору.\n"
         "После проверки баланс будет пополнен.",
-        reply_markup=main_menu(),
+        reply_markup=main_menu(is_admin=is_admin(message.from_user.id)),
     )
 
     admin_text = (
