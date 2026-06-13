@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     def cabinet_url(self, token: str) -> str:
         return f"{self.web_base_url.rstrip('/')}/cabinet/{token}"
 
+    def cabinet_pay_url(self, token: str) -> str:
+        return f"{self.web_base_url.rstrip('/')}/cabinet/{token}/pay"
+
     def admin_url(self) -> str:
         return f"{self.web_base_url.rstrip('/')}/admin"
 
