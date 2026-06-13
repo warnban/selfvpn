@@ -221,16 +221,20 @@ body::before {
 
 .key-box {
   position: relative;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
   background: rgba(7, 11, 20, 0.8);
   border: 1px dashed rgba(99, 102, 241, 0.4);
   border-radius: 12px;
-  padding: 16px 16px 16px 16px;
+  padding: 16px;
   margin: 12px 0;
   word-break: break-all;
   font-family: ui-monospace, monospace;
   font-size: 0.78rem;
   line-height: 1.5;
   color: #a5b4fc;
+  resize: vertical;
 }
 
 .copy-btn {

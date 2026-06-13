@@ -60,8 +60,8 @@
         <button class="btn btn-danger btn-sm" type="submit">🗑 Удалить</button>
       </form>
     </div>
-    <div class="key-box" id="key{{ d.id }}">{{ d.vpn_link }}</div>
-    <button type="button" class="btn btn-secondary btn-sm" onclick="copyKey('key{{ d.id }}', this)">📋 Скопировать ключ</button>
+    <textarea class="key-box" id="key{{ d.id }}" readonly rows="3">{{ d.vpn_link }}</textarea>
+    <button type="button" class="btn btn-secondary btn-sm copy-btn" data-target="key{{ d.id }}">📋 Скопировать ключ</button>
   </div>
   {% endfor %}
   {% else %}
@@ -105,13 +105,48 @@
 
 {% block scripts %}
 <script>
-function copyKey(id, btn) {
-  const text = document.getElementById(id).innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    const original = btn.textContent;
-    btn.textContent = '✅ Скопировано!';
-    setTimeout(() => btn.textContent = original, 2000);
-  });
+async function copyKey(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const text = (el.value || el.innerText || '').trim();
+  const okLabel = '✅ Скопировано!';
+  const original = btn.textContent;
+
+  function showOk() {
+    btn.textContent = okLabel;
+    setTimeout(() => { btn.textContent = original; }, 2000);
+  }
+
+  // Clipboard API — только на HTTPS/localhost
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showOk();
+      return;
+    } catch (e) { /* fallback ниже */ }
+  }
+
+  // HTTP: execCommand или выделение textarea
+  try {
+    if (el.select) {
+      el.focus();
+      el.select();
+      el.setSelectionRange(0, text.length);
+    }
+    const copied = document.execCommand('copy');
+    if (copied) {
+      showOk();
+      return;
+    }
+  } catch (e) { /* ignore */ }
+
+  // Последний вариант — ключ уже выделен, пользователь жмёт Ctrl+C
+  btn.textContent = 'Выделено — нажми Ctrl+C (или долгое нажатие → Копировать)';
+  setTimeout(() => { btn.textContent = original; }, 4000);
 }
+
+document.querySelectorAll('.copy-btn').forEach((btn) => {
+  btn.addEventListener('click', () => copyKey(btn.dataset.target, btn));
+});
 </script>
 {% endblock %}

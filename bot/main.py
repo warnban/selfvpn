@@ -37,6 +37,7 @@ async def main() -> None:
 
         me = await bot.get_me()
         logger.info("Telegram bot: @%s (id=%s)", me.username, me.id)
+        logger.info("Handlers: devices, admin (ADM PANEL), /menu")
 
         await bot.delete_webhook(drop_pending_updates=True)
         logger.info("Webhook сброшен, запуск polling")
