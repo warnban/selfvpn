@@ -1,4 +1,6 @@
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
+from urllib.parse import quote
+
+from aiogram.types import CopyTextButton, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 
 from bot.messages import AMNEZIA_ANDROID, AMNEZIA_IOS
 
@@ -49,6 +51,25 @@ def news_confirm_kb() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(text="✅ Отправить всем", callback_data="news_send"),
                 InlineKeyboardButton(text="❌ Отмена", callback_data="news_cancel"),
             ]
+        ]
+    )
+
+
+def invite_kb(ref_link: str) -> InlineKeyboardMarkup:
+    share_url = (
+        "https://t.me/share/url?"
+        f"url={quote(ref_link, safe='')}"
+        f"&text={quote('Быстрый VPN — попробуй', safe='')}"
+    )
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="📋 Скопировать ссылку",
+                    copy_text=CopyTextButton(text=ref_link),
+                ),
+            ],
+            [InlineKeyboardButton(text="📤 Поделиться", url=share_url)],
         ]
     )
 

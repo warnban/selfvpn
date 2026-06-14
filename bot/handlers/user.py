@@ -4,7 +4,7 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
-from bot.keyboards.main import BTN_CABINET, BTN_INVITE, BTN_SUPPORT, menu_for
+from bot.keyboards.main import BTN_CABINET, BTN_INVITE, BTN_SUPPORT, invite_kb, menu_for
 from bot.messages import new_user_welcome
 from bot.services.devices import count_devices, days_left_for
 from bot.services.users import count_referrals, get_user_by_telegram_id, register_user
@@ -117,9 +117,11 @@ async def show_invite(message: Message, session: AsyncSession) -> None:
 
     await message.answer(
         f"👥 <b>Пригласить друга</b>\n\n"
-        f"Твоя ссылка:\n<code>{ref_link}</code>\n\n"
+        "Нажми <b>«Скопировать ссылку»</b> — она попадёт в буфер обмена.\n"
+        "Или <b>«Поделиться»</b>, чтобы отправить другу в Telegram.\n\n"
         f"За каждого нового пользователя — <b>+{settings.referral_bonus_rub:.0f} ₽</b> на баланс.\n"
         f"Приглашено: <b>{ref_count}</b> чел.",
+        reply_markup=invite_kb(ref_link),
         parse_mode="HTML",
     )
 
