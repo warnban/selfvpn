@@ -30,7 +30,7 @@ def new_user_welcome(
         "1️⃣ Скачай <b>AmneziaVPN</b>:\n"
         f'   • <a href="{AMNEZIA_ANDROID}">Android</a>\n'
         f'   • <a href="{AMNEZIA_IOS}">iPhone</a>\n'
-        "2️⃣ В боте: «📱 Мои устройства» → добавь устройство → выбери ключ или conf-файл\n"
+        "2️⃣ Открой <b>личный кабинет</b> → добавь устройство → выбери ключ или conf-файл\n"
         "3️⃣ В Amnezia: ➕ → «Вставить ключ» или «Файл конфигурации» → Подключить\n\n"
         f"🌐 <b>Личный кабинет</b> (баланс, оплата, ключи):\n"
         f'<a href="{cabinet_link}">{cabinet_link}</a>'
@@ -44,7 +44,7 @@ def amnezia_setup_steps() -> str:
         "1️⃣ Скачай приложение <b>AmneziaVPN</b>:\n"
         f'   • <a href="{AMNEZIA_ANDROID}">Android — Play Market</a>\n'
         f'   • <a href="{AMNEZIA_IOS}">iPhone — App Store</a>\n\n'
-        "2️⃣ Открой «📱 Мои устройства» → «➕ Добавить устройство» — выбери способ: ключ <code>vpn://...</code> или conf-файл\n\n"
+        "2️⃣ В <b>личном кабинете</b> добавь устройство — выбери ключ <code>vpn://...</code> или conf-файл\n\n"
         "3️⃣ В Amnezia: <b>➕ Добавить VPN</b> → "
         "<b>«Вставить ключ / Enter key»</b> или <b>«Файл конфигурации»</b> → Подключить\n\n"
         "💡 Сохрани личный кабинет в закладки — там баланс и ключ, если Telegram недоступен."

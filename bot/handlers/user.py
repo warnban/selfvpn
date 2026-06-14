@@ -4,9 +4,9 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
-from bot.keyboards.main import app_download_kb, menu_for
-from bot.messages import amnezia_setup_steps, new_user_welcome
-from bot.services.devices import count_devices, days_left_for, user_daily_cost
+from bot.keyboards.main import BTN_CABINET, BTN_INVITE, BTN_SUPPORT, menu_for
+from bot.messages import new_user_welcome
+from bot.services.devices import count_devices, days_left_for
 from bot.services.users import count_referrals, get_user_by_telegram_id, register_user
 
 router = Router()
@@ -75,21 +75,20 @@ async def cmd_menu(message: Message) -> None:
     await message.answer("Меню обновлено 👇", reply_markup=menu_for(message.from_user.id))
 
 
-@router.message(F.text.in_({"🔐 Подключить VPN", "Подключить VPN"}))
-async def legacy_connect_vpn(message: Message, session: AsyncSession) -> None:
-    """Старая кнопка — перенаправляем в «Мои устройства»."""
-    from bot.handlers.devices import my_devices
-
+@router.message(F.text.in_({"🔐 Подключить VPN", "Подключить VPN", "📱 Мои устройства", "💰 Баланс", "💳 Пополнить", "ℹ️ Помощь"}))
+async def legacy_menu_buttons(message: Message, session: AsyncSession) -> None:
+    """Старые кнопки меню — перенаправляем в личный кабинет."""
     await message.answer(
-        "Кнопка «Подключить VPN» устарела.\n"
-        "Открываю «📱 Мои устройства»…\n"
-        "Нажми /menu если меню не обновилось.",
+        "Эта кнопка больше не в меню.\n"
+        "Всё в <b>личном кабинете</b> — баланс, оплата и устройства.\n"
+        "Нажми /menu чтобы обновить клавиатуру.",
         reply_markup=menu_for(message.from_user.id),
+        parse_mode="HTML",
     )
-    await my_devices(message, session)
+    await show_cabinet(message, session)
 
 
-@router.message(F.text == "🌐 Личный кабинет")
+@router.message(F.text == BTN_CABINET)
 async def show_cabinet(message: Message, session: AsyncSession) -> None:
     user = await get_user_by_telegram_id(session, message.from_user.id)
     if not user:
@@ -105,28 +104,8 @@ async def show_cabinet(message: Message, session: AsyncSession) -> None:
     )
 
 
-@router.message(F.text == "💰 Баланс")
-async def show_balance(message: Message, session: AsyncSession) -> None:
-    user = await get_user_by_telegram_id(session, message.from_user.id)
-    if not user:
-        await message.answer("Сначала нажми /start")
-        return
-
-    devices = await count_devices(session, user)
-    cost = await user_daily_cost(session, user)
-    left = await days_left_for(session, user)
-    await message.answer(
-        f"💰 <b>Баланс:</b> {user.balance_rub:.0f} ₽\n"
-        f"📅 <b>Тариф:</b> {settings.daily_price_rub:.0f} ₽/сутки за устройство\n"
-        f"📱 <b>Устройств:</b> {devices}\n"
-        f"💸 <b>Списание:</b> {cost:.0f} ₽/сутки\n"
-        f"⏳ <b>Хватит на:</b> ~{left} дн.",
-        parse_mode="HTML",
-    )
-
-
-@router.message(F.text == "👥 Рефералы")
-async def show_referrals(message: Message, session: AsyncSession) -> None:
+@router.message(F.text.in_({BTN_INVITE, "👥 Рефералы"}))
+async def show_invite(message: Message, session: AsyncSession) -> None:
     user = await get_user_by_telegram_id(session, message.from_user.id)
     if not user:
         await message.answer("Сначала нажми /start")
@@ -137,7 +116,7 @@ async def show_referrals(message: Message, session: AsyncSession) -> None:
     ref_count = await count_referrals(session, user)
 
     await message.answer(
-        f"👥 <b>Реферальная программа</b>\n\n"
+        f"👥 <b>Пригласить друга</b>\n\n"
         f"Твоя ссылка:\n<code>{ref_link}</code>\n\n"
         f"За каждого нового пользователя — <b>+{settings.referral_bonus_rub:.0f} ₽</b> на баланс.\n"
         f"Приглашено: <b>{ref_count}</b> чел.",
@@ -145,17 +124,14 @@ async def show_referrals(message: Message, session: AsyncSession) -> None:
     )
 
 
-@router.message(F.text == "ℹ️ Помощь")
-async def show_help(message: Message) -> None:
-    await message.answer(
-        amnezia_setup_steps() + "\n\n"
-        "<b>Устройства и оплата</b>\n"
-        "• «📱 Мои устройства» — добавляй/удаляй устройства\n"
-        "• Каждое устройство = +тариф за сутки\n"
-        "• «💳 Пополнить» — ссылка на оплату в личном кабинете\n"
-        "• «👥 Рефералы» — приглашай друзей, получай бонус\n\n"
-        f"🆘 Поддержка: <a href=\"{settings.support_tg_url()}\">@{settings.support_tg_handle}</a>",
-        reply_markup=app_download_kb(),
-        parse_mode="HTML",
-        disable_web_page_preview=True,
-    )
+@router.message(F.text == BTN_SUPPORT)
+async def show_support(message: Message) -> None:
+    url = settings.support_tg_url()
+    handle = settings.support_tg_handle
+    if url:
+        await message.answer(
+            f"🆘 <b>Поддержка</b>\n\n"
+            f'<a href="{url}">Написать @{handle}</a>',
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )

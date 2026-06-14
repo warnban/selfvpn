@@ -9,7 +9,16 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import is_admin, settings
-from bot.keyboards.main import menu_for, news_confirm_kb
+from bot.keyboards.main import (
+    BTN_ADMIN,
+    BTN_CABINET,
+    BTN_INVITE,
+    BTN_NEWS,
+    BTN_SUPPORT,
+    LEGACY_MENU_BUTTONS,
+    menu_for,
+    news_confirm_kb,
+)
 from bot.services.users import list_all_users
 
 router = Router()
@@ -20,7 +29,7 @@ class AdminNewsStates(StatesGroup):
     waiting_text = State()
 
 
-@router.message(F.text.in_({"⚙️ ADM PANEL", "ADM PANEL"}))
+@router.message(F.text.in_({BTN_ADMIN, "ADM PANEL"}))
 async def admin_panel_link(message: Message) -> None:
     if not is_admin(message.from_user.id):
         return
@@ -34,7 +43,7 @@ async def admin_panel_link(message: Message) -> None:
     )
 
 
-@router.message(F.text.in_({"📢 Новость", "Новость"}))
+@router.message(F.text.in_({BTN_NEWS, "Новость"}))
 async def admin_news_start(message: Message, state: FSMContext) -> None:
     if not is_admin(message.from_user.id):
         return
@@ -64,7 +73,9 @@ async def admin_news_preview(message: Message, state: FSMContext, session: Async
         return
 
     text = message.text.strip()
-    if text in {"⚙️ ADM PANEL", "ADM PANEL", "📢 Новость", "Новость", "📱 Мои устройства"}:
+    menu_buttons = {BTN_ADMIN, "ADM PANEL", BTN_NEWS, "Новость", BTN_CABINET, BTN_INVITE, BTN_SUPPORT}
+    menu_buttons |= LEGACY_MENU_BUTTONS
+    if text in menu_buttons:
         await message.answer("Это кнопка меню, а не текст новости. Напиши новость или /cancel")
         return
 

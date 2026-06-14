@@ -2,15 +2,37 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardBu
 
 from bot.messages import AMNEZIA_ANDROID, AMNEZIA_IOS
 
+BTN_CABINET = "🌐 Личный кабинет"
+BTN_INVITE = "👥 Пригласить"
+BTN_SUPPORT = "🆘 Поддержка"
+BTN_ADMIN = "⚙️ ADM PANEL"
+BTN_NEWS = "📢 Новость"
+
+# Старые подписи кнопок — для совместимости с устаревшими клавиатурами
+LEGACY_MENU_BUTTONS = frozenset({
+    "📱 Мои устройства",
+    "💰 Баланс",
+    "💳 Пополнить",
+    "👥 Рефералы",
+    "ℹ️ Помощь",
+    "🔐 Подключить VPN",
+    "Подключить VPN",
+})
+
 
 def main_menu(*, is_admin: bool = False) -> ReplyKeyboardMarkup:
+    from bot.config import settings
+
     rows = [
-        [KeyboardButton(text="📱 Мои устройства"), KeyboardButton(text="💰 Баланс")],
-        [KeyboardButton(text="💳 Пополнить"), KeyboardButton(text="🌐 Личный кабинет")],
-        [KeyboardButton(text="👥 Рефералы"), KeyboardButton(text="ℹ️ Помощь")],
+        [KeyboardButton(text=BTN_CABINET), KeyboardButton(text=BTN_INVITE)],
     ]
+    support_url = settings.support_tg_url()
+    if support_url:
+        rows.append([KeyboardButton(text=BTN_SUPPORT, url=support_url)])
+    else:
+        rows.append([KeyboardButton(text=BTN_SUPPORT)])
     if is_admin:
-        rows.append([KeyboardButton(text="⚙️ ADM PANEL"), KeyboardButton(text="📢 Новость")])
+        rows.append([KeyboardButton(text=BTN_ADMIN), KeyboardButton(text=BTN_NEWS)])
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
 
 
