@@ -43,7 +43,7 @@ from bot.services.freekassa import (
     payment_form_fields,
     verify_notification_signature,
 )
-from bot.messages import AMNEZIA_ANDROID, AMNEZIA_IOS
+from bot.messages import AMNEZIA_ANDROID, AMNEZIA_WG_APPLE
 from bot.services.vpn_config import safe_conf_filename
 
 app = FastAPI(title="SelfVPN Cabinet")
@@ -54,7 +54,7 @@ templates.env.globals["brand_name"] = settings.brand_name
 templates.env.globals["support_tg"] = settings.support_tg_handle
 templates.env.globals["support_tg_url"] = settings.support_tg_url()
 templates.env.globals["amnezia_android"] = AMNEZIA_ANDROID
-templates.env.globals["amnezia_ios"] = AMNEZIA_IOS
+templates.env.globals["amnezia_wg_apple"] = AMNEZIA_WG_APPLE
 templates.env.globals["platform_label"] = platform_label
 templates.env.globals["max_devices"] = settings.max_devices
 

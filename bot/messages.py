@@ -1,7 +1,9 @@
 """Тексты бота — единое место для UX-копирайта."""
 
 AMNEZIA_ANDROID = "https://play.google.com/store/apps/details?id=org.amnezia.vpn"
-AMNEZIA_IOS = "https://apps.apple.com/app/amneziavpn/id1600529900"
+AMNEZIA_WG_APPLE = "https://apps.apple.com/app/amneziawg/id6478942365"
+# Старый алиас — Amnezia VPN на iOS (не используем в инструкциях)
+AMNEZIA_IOS = AMNEZIA_WG_APPLE
 AMNEZIA_SITE = "https://amnezia.org"
 
 
@@ -17,80 +19,64 @@ def new_user_welcome(
 ) -> str:
     text = (
         f"👋 Привет, <b>{name}</b>!\n"
-        f"Добро пожаловать в <b>{brand_name}</b>.\n\n"
-        f"🛡 <b>Что это:</b> быстрый VPN для телефона и компьютера. "
-        f"Платишь только за дни, когда пользуешься — без подписок и лишних кнопок.\n\n"
-        f"🎁 Пробный доступ: <b>{trial_days} дня</b> ({trial_balance:.0f} ₽ на балансе)\n"
-        f"📅 Тариф: <b>{daily_price:.0f} ₽/сутки</b> за каждое устройство\n"
+        f"<b>{brand_name}</b> · на балансе <b>{trial_balance:.0f} ₽</b> (~{trial_days} дн.)\n"
+        f"Тариф: <b>{daily_price:.0f} ₽/сутки</b> за устройство\n"
     )
     if referral_ok:
-        text += "👥 Реферальная ссылка сработала — спасибо!\n"
+        text += "👥 Пришли по реф-ссылке — спасибо!\n"
     text += (
-        "\n<b>📲 Как подключить:</b>\n"
-        "1️⃣ Скачай <b>AmneziaVPN</b>:\n"
-        f'   • <a href="{AMNEZIA_ANDROID}">Android</a>\n'
-        f'   • <a href="{AMNEZIA_IOS}">iPhone</a>\n'
-        "2️⃣ Открой <b>личный кабинет</b> → добавь устройство → выбери ключ или conf-файл\n"
-        "3️⃣ В Amnezia: ➕ → «Вставить ключ» или «Файл конфигурации» → Подключить\n\n"
-        f"🌐 <b>Личный кабинет</b> (баланс, оплата, ключи):\n"
-        f'<a href="{cabinet_link}">{cabinet_link}</a>'
+        "\n<b>Как подключить:</b>\n"
+        "1. Открой кабинет → добавь устройство\n"
+        "2. Скачай приложение:\n"
+        f'   • Android — <a href="{AMNEZIA_ANDROID}">Amnezia VPN</a>\n'
+        f'   • iPhone / Mac — <a href="{AMNEZIA_WG_APPLE}">AmneziaWG</a>\n'
+        "3. В кабинете:\n"
+        "   • Android — вкладка <b>Ключ</b> → скопируй\n"
+        "   • iPhone / Mac — вкладка <b>Conf</b> → скачай файл\n"
+        "4. В приложении:\n"
+        "   • Android: ➕ → «Вставить ключ»\n"
+        "   • iPhone / Mac: «Добавить туннель» → «Из файла или архива» → выбери conf\n\n"
+        f'🌐 <a href="{cabinet_link}">Личный кабинет</a>'
     )
     return text
 
 
 def amnezia_setup_steps() -> str:
     return (
-        "<b>📲 Как подключить VPN</b>\n\n"
-        "1️⃣ Скачай приложение <b>AmneziaVPN</b>:\n"
-        f'   • <a href="{AMNEZIA_ANDROID}">Android — Play Market</a>\n'
-        f'   • <a href="{AMNEZIA_IOS}">iPhone — App Store</a>\n\n'
-        "2️⃣ В <b>личном кабинете</b> добавь устройство — выбери ключ <code>vpn://...</code> или conf-файл\n\n"
-        "3️⃣ В Amnezia: <b>➕ Добавить VPN</b> → "
-        "<b>«Вставить ключ / Enter key»</b> или <b>«Файл конфигурации»</b> → Подключить\n\n"
-        "💡 Сохрани личный кабинет в закладки — там баланс и ключ, если Telegram недоступен."
-    )
+        "<b>Как подключить VPN</b>\n\n"
+        "<b>Android</b> — <a href=\"{android}\">Amnezia VPN</a>\n"
+        "Кабинет → устройство → <b>Ключ</b> → ➕ → «Вставить ключ»\n\n"
+        "<b>iPhone / Mac</b> — <a href=\"{apple}\">AmneziaWG</a>\n"
+        "Кабинет → устройство → <b>Conf</b> → скачай файл → "
+        "«Добавить туннель» → «Из файла или архива»"
+    ).format(android=AMNEZIA_ANDROID, apple=AMNEZIA_WG_APPLE)
 
 
 def device_connect_choice(device_name: str = "") -> str:
-    title = f"✅ <b>Устройство «{device_name}» готово!</b>" if device_name else "✅ <b>VPN готов!</b>"
+    title = f"✅ <b>«{device_name}» готово</b>" if device_name else "✅ <b>Устройство готово</b>"
     return (
         f"{title}\n\n"
-        "Выберите способ подключения в AmneziaVPN:\n\n"
-        "🔑 <b>Ключ</b> — скопировать ссылку <code>vpn://...</code>\n"
-        "📄 <b>Conf-файл</b> — скачать файл для AmneziaWG\n\n"
-        "⚠️ Один ключ или conf — для одного устройства."
+        "Android — нажми <b>Ключ</b> (Amnezia VPN)\n"
+        "iPhone / Mac — нажми <b>Conf</b> (AmneziaWG)"
     )
 
 
 def vpn_key_instructions(vpn_link: str, device_name: str = "") -> str:
-    title = f"✅ <b>Устройство «{device_name}» готово!</b>" if device_name else "✅ <b>VPN готов!</b>"
+    title = f"🔑 <b>Ключ для «{device_name}»</b>" if device_name else "🔑 <b>Ключ подключения</b>"
     return (
         f"{title}\n\n"
-        "<b>Ключ</b> (нажми, чтобы скопировать):\n"
         f"<code>{vpn_link}</code>\n\n"
-        "<b>Дальше в приложении Amnezia:</b>\n"
-        "1. Открой AmneziaVPN\n"
-        "2. ➕ → «Вставить ключ» / «Enter key»\n"
-        "3. Вставь ключ из сообщения выше\n"
-        "4. Нажми «Подключить»\n\n"
-        "⚠️ Один ключ — для одного устройства. Для другого телефона/ПК добавь ещё устройство.\n\n"
-        f'Нет приложения? '
-        f'<a href="{AMNEZIA_ANDROID}">Android</a> · '
-        f'<a href="{AMNEZIA_IOS}">iOS</a>'
+        "<b>Amnezia VPN (Android):</b>\n"
+        "➕ → «Вставить ключ» → вставь ключ → Подключить\n\n"
+        f'<a href="{AMNEZIA_ANDROID}">Скачать Amnezia VPN</a>'
     )
 
 
 def vpn_conf_instructions(device_name: str = "") -> str:
-    title = f"📄 <b>Conf-файл для «{device_name}»</b>" if device_name else "📄 <b>Conf-файл для AmneziaWG</b>"
+    title = f"📄 <b>Conf для «{device_name}»</b>" if device_name else "📄 <b>Conf-файл</b>"
     return (
         f"{title}\n\n"
-        "<b>Дальше в приложении Amnezia:</b>\n"
-        "1. Открой AmneziaVPN\n"
-        "2. ➕ → «Файл конфигурации» / «Configuration file»\n"
-        "3. Выбери скачанный .conf файл\n"
-        "4. Нажми «Подключить»\n\n"
-        "⚠️ Один conf-файл — для одного устройства.\n\n"
-        f'Нет приложения? '
-        f'<a href="{AMNEZIA_ANDROID}">Android</a> · '
-        f'<a href="{AMNEZIA_IOS}">iOS</a>'
+        "<b>AmneziaWG (iPhone / Mac):</b>\n"
+        "«Добавить туннель» → «Добавить туннель из файла или архива» → выбери этот .conf\n\n"
+        f'<a href="{AMNEZIA_WG_APPLE}">Скачать AmneziaWG</a>'
     )

@@ -527,6 +527,15 @@ body::before {
   background: rgba(255, 255, 255, 0.04);
 }
 
+.setup-block-title {
+  font-size: 0.875rem;
+  margin-bottom: 8px;
+}
+
+.setup-block-title a {
+  color: var(--primary);
+}
+
 .connect-hint {
   margin-top: 8px;
   font-size: 0.75rem;

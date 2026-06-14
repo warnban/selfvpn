@@ -94,6 +94,7 @@
     {% if devices %}
     {% for d in devices %}
     {% set icon = '📱' if d.platform in ['android', 'ios'] else ('🖥' if d.platform in ['windows', 'mac'] else '📡') %}
+    {% set use_conf = d.platform in ['ios', 'mac'] %}
     <div class="device-card">
       <div class="device-row">
         <div class="device-icon">{{ icon }}</div>
@@ -112,12 +113,14 @@
       </div>
       <div class="device-connect">
         <div class="connect-tabs" role="tablist" aria-label="Способ подключения">
-          <button type="button" class="connect-tab active" role="tab" aria-selected="true"
+          <button type="button" class="connect-tab{% if not use_conf %} active{% endif %}" role="tab"
+                  aria-selected="{{ 'true' if not use_conf else 'false' }}"
                   data-mode="key" data-device="{{ d.id }}">🔑 Ключ</button>
-          <button type="button" class="connect-tab" role="tab" aria-selected="false"
+          <button type="button" class="connect-tab{% if use_conf %} active{% endif %}" role="tab"
+                  aria-selected="{{ 'true' if use_conf else 'false' }}"
                   data-mode="conf" data-device="{{ d.id }}">📄 Conf-файл</button>
         </div>
-        <div class="connect-panel connect-panel-key" data-device="{{ d.id }}" data-mode="key">
+        <div class="connect-panel connect-panel-key{% if use_conf %} hidden{% endif %}" data-device="{{ d.id }}" data-mode="key">
           <textarea class="key-box-hidden" id="key{{ d.id }}" readonly aria-hidden="true">{{ d.vpn_link }}</textarea>
           <button type="button" class="key-copy-btn copy-btn" data-target="key{{ d.id }}">
             <div style="flex:1;min-width:0">
@@ -133,8 +136,9 @@
               </svg>
             </span>
           </button>
+          <p class="connect-hint">Amnezia VPN (Android): ➕ → «Вставить ключ»</p>
         </div>
-        <div class="connect-panel connect-panel-conf hidden" data-device="{{ d.id }}" data-mode="conf">
+        <div class="connect-panel connect-panel-conf{% if not use_conf %} hidden{% endif %}" data-device="{{ d.id }}" data-mode="conf">
           <a class="conf-download-btn" href="/cabinet/{{ user.cabinet_token }}/devices/{{ d.id }}/conf">
             <div style="flex:1;min-width:0">
               <p class="key-copy-label">Conf-файл AmneziaWG</p>
@@ -146,13 +150,13 @@
               </svg>
             </span>
           </a>
-          <p class="connect-hint">AmneziaVPN → ➕ → «Файл конфигурации»</p>
+          <p class="connect-hint">AmneziaWG (iPhone / Mac): «Добавить туннель» → «Из файла или архива»</p>
         </div>
       </div>
     </div>
     {% endfor %}
     {% else %}
-    <p class="device-empty">У вас пока нет устройств. Добавьте — и получите ключ или conf-файл для Amnezia.</p>
+    <p class="device-empty">Добавьте устройство — получите ключ (Android) или conf-файл (iPhone / Mac).</p>
     {% endif %}
 
     {% if device_count < max_devices %}
@@ -176,15 +180,16 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
     </summary>
     <div class="panel-body">
+      <p class="setup-block-title"><strong>Android</strong> — <a href="{{ amnezia_android }}" target="_blank" rel="noopener">Amnezia VPN</a></p>
       <ol class="steps">
-        <li>Скачайте <strong>AmneziaVPN</strong> (ссылки ниже)</li>
-        <li>Выберите способ: <strong>ключ</strong> (скопировать) или <strong>conf-файл</strong> (скачать)</li>
-        <li>В приложении: ➕ → «Введите ключ» или «Файл конфигурации» → Подключить</li>
+        <li>Добавьте устройство → вкладка <strong>Ключ</strong> → скопируйте</li>
+        <li>В приложении: ➕ → «Вставить ключ» → Подключить</li>
       </ol>
-      <div class="app-links">
-        <a href="{{ amnezia_android }}" target="_blank" rel="noopener">📱 Android</a>
-        <a href="{{ amnezia_ios }}" target="_blank" rel="noopener">🍎 iPhone</a>
-      </div>
+      <p class="setup-block-title" style="margin-top:16px"><strong>iPhone / Mac</strong> — <a href="{{ amnezia_wg_apple }}" target="_blank" rel="noopener">AmneziaWG</a></p>
+      <ol class="steps">
+        <li>Добавьте устройство → вкладка <strong>Conf-файл</strong> → скачайте .conf</li>
+        <li>В приложении: «Добавить туннель» → «Добавить туннель из файла или архива» → выберите conf</li>
+      </ol>
     </div>
   </details>
 

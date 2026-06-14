@@ -2,7 +2,7 @@ from urllib.parse import quote
 
 from aiogram.types import CopyTextButton, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 
-from bot.messages import AMNEZIA_ANDROID, AMNEZIA_IOS
+from bot.messages import AMNEZIA_ANDROID, AMNEZIA_WG_APPLE
 
 BTN_CABINET = "🌐 Личный кабинет"
 BTN_INVITE = "👥 Пригласить"
@@ -79,7 +79,7 @@ def app_download_kb() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(text="📱 Android", url=AMNEZIA_ANDROID),
-                InlineKeyboardButton(text="🍎 iPhone", url=AMNEZIA_IOS),
+                InlineKeyboardButton(text="🍎 iPhone", url=AMNEZIA_WG_APPLE),
             ],
         ]
     )
@@ -94,7 +94,7 @@ def device_created_kb(device_id: int) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(text="📱 Android", url=AMNEZIA_ANDROID),
-            InlineKeyboardButton(text="🍎 iPhone", url=AMNEZIA_IOS),
+            InlineKeyboardButton(text="🍎 iPhone / Mac", url=AMNEZIA_WG_APPLE),
         ],
         [InlineKeyboardButton(text="➕ Добавить ещё", callback_data="dev_add")],
         [InlineKeyboardButton(text="📱 К моим устройствам", callback_data="dev_list")],
