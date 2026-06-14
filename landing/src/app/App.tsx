@@ -116,7 +116,7 @@ function Hero() {
             </h1>
 
             <p className="text-[#888] text-base sm:text-lg mb-8 sm:mb-10 max-w-md" style={{ fontFamily: "'Manrope', sans-serif" }}>
-              Работает там, где другие уже сдались. Без логов, без слежки, без блокировок. Личный VPN от живого человека.
+              Работает там, где другие уже сдались. Без логов, без слежки, без блокировок. Личный VPN на протоколе AmneziaWG — подключение в Telegram.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 sm:mb-10">
@@ -653,6 +653,7 @@ function Footer() {
     <footer
       className="border-t py-8 sm:py-12"
       style={{ borderColor: "rgba(184,255,0,0.08)" }}
+      role="contentinfo"
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 text-center md:text-left">
         <span style={{ fontFamily: "'Barlow Condensed', sans-serif" }} className="text-lg sm:text-xl font-black tracking-tight text-white">
@@ -685,11 +686,13 @@ export default function App() {
   return (
     <div style={{ backgroundColor: "#070707", fontFamily: "'Manrope', sans-serif" }} className="min-h-screen overflow-x-hidden">
       <Nav />
-      <Hero />
-      <Features />
-      <Pricing />
-      <Testimonials />
-      <FAQ />
+      <main>
+        <Hero />
+        <Features />
+        <Pricing />
+        <Testimonials />
+        <FAQ />
+      </main>
       <Footer />
     </div>
   );

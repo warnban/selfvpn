@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#070707"/>
+  <defs>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#b8ff00" stroke-opacity="0.08"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <circle cx="600" cy="280" r="220" fill="#b8ff00" opacity="0.08"/>
+  <text x="80" y="220" font-family="Arial Black, sans-serif" font-size="96" font-weight="900" fill="#ffffff">VPN</text>
+  <text x="80" y="320" font-family="Arial Black, sans-serif" font-size="96" font-weight="900" fill="#b8ff00">" / !</text>
+  <text x="80" y="400" font-family="Arial, sans-serif" font-size="36" fill="#888888">AmneziaWG · 10 ½/ACB:8 · 2 4=O 15A?;0B=></text>
+  <text x="80" y="470" font-family="Arial, sans-serif" font-size="28" fill="#666666">57 ;>3>2 · 57 1;>:8@>2>: · >4:;NG5=85 2 Telegram</text>
+  <rect x="80" y="510" width="280" height="56" fill="#b8ff00"/>
+  <text x="110" y="548" font-family="Arial Black, sans-serif" font-size="28" font-weight="900" fill="#070707">daddyvpn.site</text>
+</svg>

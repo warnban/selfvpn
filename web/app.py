@@ -90,6 +90,36 @@ async def health() -> PlainTextResponse:
     return PlainTextResponse("ok")
 
 
+@app.get("/robots.txt", response_class=PlainTextResponse)
+async def robots_txt() -> PlainTextResponse:
+    base = settings.web_base_url.rstrip("/")
+    return PlainTextResponse(
+        "\n".join(
+            [
+                "User-agent: *",
+                "Allow: /",
+                "Disallow: /admin",
+                "Disallow: /cabinet",
+                "Disallow: /payment",
+                "",
+                f"Sitemap: {base}/sitemap.xml",
+            ]
+        )
+    )
+
+
+@app.get("/sitemap.xml")
+async def sitemap_xml() -> Response:
+    base = settings.web_base_url.rstrip("/")
+    xml = (
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n"
+        f"  <url><loc>{base}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n"
+        "</urlset>\n"
+    )
+    return Response(content=xml, media_type="application/xml")
+
+
 @app.get("/cabinet/{token}", response_class=HTMLResponse)
 async def cabinet(request: Request, token: str, session: AsyncSession = Depends(get_db)):
     user = await get_user_by_cabinet_token(session, token)
