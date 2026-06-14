@@ -34,5 +34,6 @@ def device_config_text(vpn_config: str | None, vpn_link: str | None) -> str:
 
 
 def safe_conf_filename(name: str, device_id: int) -> str:
-    slug = re.sub(r"[^\w\-]+", "_", name, flags=re.UNICODE).strip("_") or f"device_{device_id}"
+    # HTTP headers (Content-Disposition) must be latin-1 — keep filename ASCII-only.
+    slug = re.sub(r"[^\w\-]+", "_", name, flags=re.ASCII).strip("_") or f"device_{device_id}"
     return f"{slug}.conf"
