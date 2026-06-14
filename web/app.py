@@ -81,9 +81,8 @@ async def startup() -> None:
     await init_db()
 
 
-@app.get("/", response_class=HTMLResponse)
-async def index() -> RedirectResponse:
-    return RedirectResponse("/admin/login")
+landing_path = Path(__file__).parent / "landing"
+landing_index = landing_path / "index.html"
 
 
 @app.get("/health")
@@ -496,3 +495,15 @@ async def admin_update_stars(
 
     await set_stars_per_day(session, stars_per_day)
     return RedirectResponse("/admin?stars_saved=1", status_code=303)
+
+
+if landing_index.is_file():
+    app.mount(
+        "/",
+        StaticFiles(directory=str(landing_path), html=True),
+        name="landing",
+    )
+else:
+    @app.get("/", response_class=HTMLResponse)
+    async def index() -> RedirectResponse:
+        return RedirectResponse("/admin/login")

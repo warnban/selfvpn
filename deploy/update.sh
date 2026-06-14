@@ -5,6 +5,11 @@ cd "$(dirname "$0")/.."
 
 git pull --ff-only 2>/dev/null || { git checkout -- deploy/fix-502.sh 2>/dev/null; git pull --ff-only; }
 
+if [ -f deploy/build-landing.sh ] && command -v npm >/dev/null 2>&1; then
+  echo "==> сборка лендинга"
+  bash deploy/build-landing.sh
+fi
+
 BOT_SERVICE="selfvpn-bot"
 WEB_SERVICE="selfvpn-web"
 
