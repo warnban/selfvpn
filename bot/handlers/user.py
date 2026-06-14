@@ -75,7 +75,42 @@ async def cmd_menu(message: Message) -> None:
     await message.answer("Меню обновлено 👇", reply_markup=menu_for(message.from_user.id))
 
 
-@router.message(F.text.in_({"🔐 Подключить VPN", "Подключить VPN", "📱 Мои устройства", "💰 Баланс", "💳 Пополнить", "ℹ️ Помощь"}))
+@router.message(Command("terms"))
+async def cmd_terms(message: Message) -> None:
+    await message.answer(
+        f"📄 <b>Условия использования {settings.brand_name}</b>\n\n"
+        f"• Тариф: {settings.daily_price_rub:.0f} ₽ за устройство в сутки.\n"
+        "• Баланс списывается ежедневно; при нулевом балансе VPN отключается.\n"
+        "• Оплата Stars и картой пополняет баланс; возврат — через поддержку.\n"
+        "• Используя сервис, вы соглашаетесь с этими условиями.\n\n"
+        f"Поддержка: /paysupport",
+        parse_mode="HTML",
+    )
+
+
+@router.message(Command("paysupport"))
+async def cmd_paysupport(message: Message) -> None:
+    url = settings.support_tg_url()
+    handle = settings.support_tg_handle
+    if url:
+        await message.answer(
+            "🧾 <b>Поддержка по оплатам</b>\n\n"
+            "Если оплата прошла, но баланс не начислился — напишите в поддержку "
+            "с указанием даты, суммы и способа оплаты.\n\n"
+            f'<a href="{url}">Написать @{handle}</a>\n\n'
+            "Telegram не помогает с покупками в ботах — только мы.",
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
+    else:
+        await message.answer(
+            "🧾 <b>Поддержка по оплатам</b>\n\n"
+            "Напишите администратору с указанием даты, суммы и способа оплаты.",
+            parse_mode="HTML",
+        )
+
+
+@router.message(F.text.in_({"🔐 Подключить VPN", "Подключить VPN", "📱 Мои устройства", "💰 Баланс", "ℹ️ Помощь"}))
 async def legacy_menu_buttons(message: Message, session: AsyncSession) -> None:
     """Старые кнопки меню — перенаправляем в личный кабинет."""
     await message.answer(

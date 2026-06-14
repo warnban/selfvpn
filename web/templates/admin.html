@@ -34,6 +34,9 @@
 {% if request.query_params.get('rejected') %}
 <div class="alert alert-success">Платёж отклонён.</div>
 {% endif %}
+{% if request.query_params.get('stars_saved') %}
+<div class="alert alert-success">Курс Stars сохранён.</div>
+{% endif %}
 
 {% set active_users = namespace(count=0) %}
 {% for u in users %}
@@ -101,10 +104,52 @@
     </div>
     <div>
       <div class="admin-stat-value">{{ daily_price }} ₽</div>
+      <div class="admin-stat-sub">за устройство / сутки (.env)</div>
+    </div>
+  </div>
+
+  <div class="admin-stat-card">
+    <div class="admin-stat-top">
+      <span class="admin-stat-label">Stars</span>
+      <div class="admin-stat-icon" style="background:rgba(255,200,80,0.12)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ffc850" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <div class="admin-stat-value">{{ stars_per_day }} ⭐</div>
       <div class="admin-stat-sub">за устройство / сутки</div>
     </div>
   </div>
 </div>
+
+<section class="pending-section" style="margin-bottom:24px">
+  <h2>Telegram Stars</h2>
+  <p class="muted" style="margin-bottom:16px">
+    Тариф в рублях задаётся в <code>.env</code> (<code>DAILY_PRICE_RUB</code>).
+    Здесь — сколько Stars платит пользователь за 1 день VPN в боте.
+  </p>
+  <form method="post" action="/admin/settings/stars" class="credit-form" style="max-width:420px">
+    <label for="stars_per_day">Stars за 1 день</label>
+    <div style="display:flex;gap:12px;align-items:center;margin-top:8px">
+      <input
+        id="stars_per_day"
+        name="stars_per_day"
+        type="number"
+        min="1"
+        max="10000"
+        value="{{ stars_per_day }}"
+        required
+        style="flex:1"
+      />
+      <button type="submit" class="btn btn-primary">Сохранить</button>
+    </div>
+    <p class="muted" style="margin-top:12px;font-size:0.9rem">
+      Пример: 30 дн. = {{ stars_per_day * 30 }} ⭐ (≈ {{ daily_price * 30 }} ₽ на балансе)
+    </p>
+  </form>
+</section>
 
 {% if pending_payments %}
 <section class="pending-section">

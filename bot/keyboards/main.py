@@ -5,6 +5,7 @@ from aiogram.types import CopyTextButton, InlineKeyboardButton, InlineKeyboardMa
 from bot.messages import AMNEZIA_ANDROID, AMNEZIA_WG_APPLE
 
 BTN_CABINET = "🌐 Личный кабинет"
+BTN_TOPUP = "⭐ Пополнить"
 BTN_INVITE = "👥 Пригласить"
 BTN_SUPPORT = "🆘 Поддержка"
 BTN_ADMIN = "⚙️ ADM PANEL"
@@ -26,7 +27,8 @@ def main_menu(*, is_admin: bool = False) -> ReplyKeyboardMarkup:
     from bot.config import settings
 
     rows = [
-        [KeyboardButton(text=BTN_CABINET), KeyboardButton(text=BTN_INVITE)],
+        [KeyboardButton(text=BTN_CABINET), KeyboardButton(text=BTN_TOPUP)],
+        [KeyboardButton(text=BTN_INVITE)],
     ]
     support_url = settings.support_tg_url()
     if support_url:
@@ -142,6 +144,30 @@ def device_del_confirm_kb(device_id: int) -> InlineKeyboardMarkup:
             ]
         ]
     )
+
+
+def stars_days_selection_kb(stars_per_day: int) -> InlineKeyboardMarkup:
+    from bot.config import settings
+
+    presets = [7, 14, 30, 60, 90]
+    rows = []
+    row = []
+    for days in presets:
+        stars = stars_per_day * days
+        rub = settings.price_for_days(days)
+        row.append(
+            InlineKeyboardButton(
+                text=f"{days} дн. — {stars} ⭐ ({rub:.0f} ₽)",
+                callback_data=f"stars_days:{days}",
+            )
+        )
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    rows.append([InlineKeyboardButton(text="❌ Отмена", callback_data="stars_days:cancel")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def days_selection_kb() -> InlineKeyboardMarkup:

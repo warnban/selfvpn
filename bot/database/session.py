@@ -8,7 +8,7 @@ from datetime import datetime
 from sqlalchemy import select, text
 
 from bot.config import settings
-from bot.database.models import Base
+from bot.database.models import AppSetting, Base
 
 engine = create_async_engine(settings.database_url, echo=False)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -18,6 +18,10 @@ async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         await _migrate_sqlite(conn)
+    async with async_session() as session:
+        from bot.services.app_settings import ensure_app_settings_defaults
+
+        await ensure_app_settings_defaults(session)
 
 
 async def _migrate_sqlite(conn) -> None:
@@ -49,6 +53,10 @@ async def _migrate_sqlite(conn) -> None:
                 sync_conn.execute(text("ALTER TABLE payments ADD COLUMN source VARCHAR(16) DEFAULT 'telegram'"))
             if "screenshot_path" not in cols:
                 sync_conn.execute(text("ALTER TABLE payments ADD COLUMN screenshot_path VARCHAR(512)"))
+            if "stars_amount" not in cols:
+                sync_conn.execute(text("ALTER TABLE payments ADD COLUMN stars_amount INTEGER"))
+            if "telegram_charge_id" not in cols:
+                sync_conn.execute(text("ALTER TABLE payments ADD COLUMN telegram_charge_id VARCHAR(255)"))
 
         # Перенос старого единичного VPN из users в таблицу devices
         if "devices" in inspector.get_table_names():

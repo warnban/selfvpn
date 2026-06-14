@@ -24,6 +24,7 @@ from bot.services.devices import (
     remove_device,
     user_daily_cost,
 )
+from bot.services.app_settings import get_stars_per_day, set_stars_per_day
 from bot.services.users import (
     admin_credit_balance,
     approve_payment,
@@ -380,7 +381,7 @@ async def admin_dashboard(request: Request, session: AsyncSession = Depends(get_
         await session.execute(
             select(Payment).where(
                 Payment.status == PaymentStatus.PENDING.value,
-                Payment.source != "freekassa",
+                Payment.source.notin_(["freekassa", "stars"]),
             )
         )
     ).scalars().all()
@@ -396,6 +397,7 @@ async def admin_dashboard(request: Request, session: AsyncSession = Depends(get_
     for d in devices:
         device_counts[d.user_id] = device_counts.get(d.user_id, 0) + 1
     active_vpn = len(devices)
+    stars_per_day = await get_stars_per_day(session)
 
     return templates.TemplateResponse(
         request,
@@ -404,6 +406,7 @@ async def admin_dashboard(request: Request, session: AsyncSession = Depends(get_
             "users": users,
             "pending_payments": pending_rows,
             "daily_price": settings.daily_price_rub,
+            "stars_per_day": stars_per_day,
             "active_vpn": active_vpn,
             "device_counts": device_counts,
         },
@@ -447,7 +450,7 @@ async def admin_approve_payment_web(
     payment = await session.get(Payment, payment_id)
     if not payment or payment.status != PaymentStatus.PENDING.value:
         return RedirectResponse("/admin", status_code=303)
-    if payment.source == "freekassa":
+    if payment.source in ("freekassa", "stars"):
         return RedirectResponse("/admin", status_code=303)
 
     user = await approve_payment(session, payment)
@@ -472,7 +475,7 @@ async def admin_reject_payment_web(
     payment = await session.get(Payment, payment_id)
     if not payment or payment.status != PaymentStatus.PENDING.value:
         return RedirectResponse("/admin", status_code=303)
-    if payment.source == "freekassa":
+    if payment.source in ("freekassa", "stars"):
         return RedirectResponse("/admin", status_code=303)
 
     await reject_payment(session, payment)
@@ -480,3 +483,16 @@ async def admin_reject_payment_web(
     if user:
         await notify_payment_rejected(user.telegram_id)
     return RedirectResponse("/admin?rejected=1", status_code=303)
+
+
+@app.post("/admin/settings/stars")
+async def admin_update_stars(
+    request: Request,
+    stars_per_day: int = Form(...),
+    session: AsyncSession = Depends(get_db),
+):
+    if not is_admin(request):
+        return RedirectResponse("/admin/login", status_code=303)
+
+    await set_stars_per_day(session, stars_per_day)
+    return RedirectResponse("/admin?stars_saved=1", status_code=303)

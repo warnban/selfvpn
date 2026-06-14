@@ -112,6 +112,29 @@ async def cancel_pending_freekassa_for_user(
     await session.commit()
 
 
+async def cancel_pending_stars_for_user(
+    session: AsyncSession,
+    user: User,
+    *,
+    comment: str = "Отменено — новый счёт Stars",
+) -> None:
+    result = await session.execute(
+        select(Payment).where(
+            Payment.user_id == user.id,
+            Payment.status == PaymentStatus.PENDING.value,
+            Payment.source == "stars",
+        )
+    )
+    payments = list(result.scalars().all())
+    if not payments:
+        return
+    for payment in payments:
+        payment.status = PaymentStatus.REJECTED.value
+        payment.processed_at = datetime.utcnow()
+        payment.admin_comment = comment
+    await session.commit()
+
+
 async def create_payment_request(
     session: AsyncSession,
     user: User,
@@ -119,6 +142,7 @@ async def create_payment_request(
     days: int,
     *,
     source: str = "telegram",
+    stars_amount: int | None = None,
     screenshot_file_id: str | None = None,
     screenshot_path: str | None = None,
 ) -> Payment:
@@ -126,6 +150,7 @@ async def create_payment_request(
         user_id=user.id,
         amount_rub=amount,
         days_purchased=days,
+        stars_amount=stars_amount,
         source=source,
         screenshot_file_id=screenshot_file_id,
         screenshot_path=screenshot_path,
@@ -135,6 +160,24 @@ async def create_payment_request(
     await session.commit()
     await session.refresh(payment)
     return payment
+
+
+async def finalize_stars_payment(
+    session: AsyncSession,
+    payment: Payment,
+    *,
+    charge_id: str,
+    stars_paid: int,
+) -> User:
+    user = await session.get(User, payment.user_id)
+    if payment.status == PaymentStatus.APPROVED.value:
+        if user:
+            await session.refresh(user)
+        return user
+
+    payment.stars_amount = stars_paid
+    payment.telegram_charge_id = charge_id
+    return await approve_payment(session, payment)
 
 
 async def approve_payment(session: AsyncSession, payment: Payment) -> User:

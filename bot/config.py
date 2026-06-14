@@ -12,10 +12,12 @@ class Settings(BaseSettings):
     bot_token: str
     admin_ids: str = ""
 
-    daily_price_rub: float = 5.0
+    daily_price_rub: float = 10.0
     trial_days: int = 2
     referral_bonus_rub: float = 5.0
     max_devices: int = 5
+    stars_per_day: int = 6
+    stars_enabled: bool = True
 
     panel_url: str = "http://127.0.0.1:5000"
     panel_api_token: str = ""
@@ -60,6 +62,9 @@ class Settings(BaseSettings):
 
     def price_for_days(self, days: int) -> float:
         return round(self.daily_price_rub * days, 2)
+
+    def default_stars_for_days(self, days: int) -> int:
+        return self.stars_per_day * days
 
     def cabinet_url(self, token: str) -> str:
         return f"{self.web_base_url.rstrip('/')}/cabinet/{token}"

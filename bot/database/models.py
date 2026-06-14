@@ -67,6 +67,8 @@ class Payment(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     amount_rub: Mapped[float] = mapped_column(Float)
     days_purchased: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    stars_amount: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    telegram_charge_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     source: Mapped[str] = mapped_column(String(16), default="telegram")
     status: Mapped[str] = mapped_column(String(32), default=PaymentStatus.PENDING.value)
     screenshot_file_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -76,6 +78,14 @@ class Payment(Base):
     processed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="payments")
+
+
+class AppSetting(Base):
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(String(255))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class Referral(Base):
