@@ -42,25 +42,33 @@ def app_download_kb() -> InlineKeyboardMarkup:
     )
 
 
-def device_created_kb() -> InlineKeyboardMarkup:
-    """Показывается после создания ключа: скачать приложение + продолжить."""
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text="📱 Android", url=AMNEZIA_ANDROID),
-                InlineKeyboardButton(text="🍎 iPhone", url=AMNEZIA_IOS),
-            ],
-            [InlineKeyboardButton(text="➕ Добавить ещё", callback_data="dev_add")],
-            [InlineKeyboardButton(text="📱 К моим устройствам", callback_data="dev_list")],
-        ]
-    )
+def device_created_kb(device_id: int) -> InlineKeyboardMarkup:
+    """Показывается после создания устройства: выбор способа подключения."""
+    rows = [
+        [
+            InlineKeyboardButton(text="🔑 Ключ", callback_data=f"dev_key:{device_id}"),
+            InlineKeyboardButton(text="📄 Conf-файл", callback_data=f"dev_conf:{device_id}"),
+        ],
+        [
+            InlineKeyboardButton(text="📱 Android", url=AMNEZIA_ANDROID),
+            InlineKeyboardButton(text="🍎 iPhone", url=AMNEZIA_IOS),
+        ],
+        [InlineKeyboardButton(text="➕ Добавить ещё", callback_data="dev_add")],
+        [InlineKeyboardButton(text="📱 К моим устройствам", callback_data="dev_list")],
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def devices_kb(devices: list) -> InlineKeyboardMarkup:
-    """Список устройств: кнопка показа ключа + удаление."""
+    """Список устройств: ключ / conf + удаление."""
     rows = []
     for d in devices:
-        rows.append([InlineKeyboardButton(text=f"🔑 {d.name}", callback_data=f"dev_key:{d.id}")])
+        rows.append(
+            [
+                InlineKeyboardButton(text=f"🔑 {d.name}", callback_data=f"dev_key:{d.id}"),
+                InlineKeyboardButton(text="📄 Conf", callback_data=f"dev_conf:{d.id}"),
+            ]
+        )
         rows.append([InlineKeyboardButton(text=f"🗑 Удалить «{d.name}»", callback_data=f"dev_del:{d.id}")])
     rows.append([InlineKeyboardButton(text="➕ Добавить устройство", callback_data="dev_add")])
     return InlineKeyboardMarkup(inline_keyboard=rows)

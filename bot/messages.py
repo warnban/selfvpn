@@ -30,8 +30,8 @@ def new_user_welcome(
         "1️⃣ Скачай <b>AmneziaVPN</b>:\n"
         f'   • <a href="{AMNEZIA_ANDROID}">Android</a>\n'
         f'   • <a href="{AMNEZIA_IOS}">iPhone</a>\n'
-        "2️⃣ В боте: «📱 Мои устройства» → добавь устройство → получишь ключ\n"
-        "3️⃣ В Amnezia: ➕ → «Вставить ключ» → Подключить\n\n"
+        "2️⃣ В боте: «📱 Мои устройства» → добавь устройство → выбери ключ или conf-файл\n"
+        "3️⃣ В Amnezia: ➕ → «Вставить ключ» или «Файл конфигурации» → Подключить\n\n"
         f"🌐 <b>Личный кабинет</b> (баланс, оплата, ключи):\n"
         f'<a href="{cabinet_link}">{cabinet_link}</a>'
     )
@@ -44,10 +44,21 @@ def amnezia_setup_steps() -> str:
         "1️⃣ Скачай приложение <b>AmneziaVPN</b>:\n"
         f'   • <a href="{AMNEZIA_ANDROID}">Android — Play Market</a>\n'
         f'   • <a href="{AMNEZIA_IOS}">iPhone — App Store</a>\n\n'
-        "2️⃣ Открой «📱 Мои устройства» → «➕ Добавить устройство» — получишь ключ <code>vpn://...</code>\n\n"
+        "2️⃣ Открой «📱 Мои устройства» → «➕ Добавить устройство» — выбери способ: ключ <code>vpn://...</code> или conf-файл\n\n"
         "3️⃣ В Amnezia: <b>➕ Добавить VPN</b> → "
-        "<b>«Вставить ключ / Enter key»</b> → вставь ключ → Подключить\n\n"
+        "<b>«Вставить ключ / Enter key»</b> или <b>«Файл конфигурации»</b> → Подключить\n\n"
         "💡 Сохрани личный кабинет в закладки — там баланс и ключ, если Telegram недоступен."
+    )
+
+
+def device_connect_choice(device_name: str = "") -> str:
+    title = f"✅ <b>Устройство «{device_name}» готово!</b>" if device_name else "✅ <b>VPN готов!</b>"
+    return (
+        f"{title}\n\n"
+        "Выберите способ подключения в AmneziaVPN:\n\n"
+        "🔑 <b>Ключ</b> — скопировать ссылку <code>vpn://...</code>\n"
+        "📄 <b>Conf-файл</b> — скачать файл для AmneziaWG\n\n"
+        "⚠️ Один ключ или conf — для одного устройства."
     )
 
 
@@ -63,6 +74,22 @@ def vpn_key_instructions(vpn_link: str, device_name: str = "") -> str:
         "3. Вставь ключ из сообщения выше\n"
         "4. Нажми «Подключить»\n\n"
         "⚠️ Один ключ — для одного устройства. Для другого телефона/ПК добавь ещё устройство.\n\n"
+        f'Нет приложения? '
+        f'<a href="{AMNEZIA_ANDROID}">Android</a> · '
+        f'<a href="{AMNEZIA_IOS}">iOS</a>'
+    )
+
+
+def vpn_conf_instructions(device_name: str = "") -> str:
+    title = f"📄 <b>Conf-файл для «{device_name}»</b>" if device_name else "📄 <b>Conf-файл для AmneziaWG</b>"
+    return (
+        f"{title}\n\n"
+        "<b>Дальше в приложении Amnezia:</b>\n"
+        "1. Открой AmneziaVPN\n"
+        "2. ➕ → «Файл конфигурации» / «Configuration file»\n"
+        "3. Выбери скачанный .conf файл\n"
+        "4. Нажми «Подключить»\n\n"
+        "⚠️ Один conf-файл — для одного устройства.\n\n"
         f'Нет приложения? '
         f'<a href="{AMNEZIA_ANDROID}">Android</a> · '
         f'<a href="{AMNEZIA_IOS}">iOS</a>'

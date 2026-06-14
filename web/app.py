@@ -2,7 +2,7 @@ from collections.abc import AsyncGenerator
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
@@ -17,6 +17,8 @@ from bot.services.devices import (
     add_device,
     count_devices,
     days_left_for,
+    get_device,
+    get_device_config,
     list_devices,
     platform_label,
     remove_device,
@@ -42,6 +44,7 @@ from bot.services.freekassa import (
     verify_notification_signature,
 )
 from bot.messages import AMNEZIA_ANDROID, AMNEZIA_IOS
+from bot.services.vpn_config import safe_conf_filename
 
 app = FastAPI(title="SelfVPN Cabinet")
 app.add_middleware(SessionMiddleware, secret_key=settings.web_secret_key)
@@ -150,6 +153,32 @@ async def cabinet_device_remove(
         return RedirectResponse("/", status_code=303)
     await remove_device(session, user, device_id)
     return RedirectResponse(f"/cabinet/{token}#devices", status_code=303)
+
+
+@app.get("/cabinet/{token}/devices/{device_id}/conf")
+async def cabinet_device_conf(
+    token: str,
+    device_id: int,
+    session: AsyncSession = Depends(get_db),
+):
+    user = await get_user_by_cabinet_token(session, token)
+    if not user:
+        return PlainTextResponse("Not found", status_code=404)
+
+    device = await get_device(session, user, device_id)
+    if not device:
+        return PlainTextResponse("Not found", status_code=404)
+
+    config = get_device_config(device)
+    if not config:
+        return PlainTextResponse("Conf unavailable", status_code=404)
+
+    filename = safe_conf_filename(device.name, device.id)
+    return Response(
+        content=config.encode("utf-8"),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get("/cabinet/{token}/pay", response_class=HTMLResponse)

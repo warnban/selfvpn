@@ -1,4 +1,3 @@
-import base64
 import logging
 import secrets
 
@@ -8,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.config import settings
 from bot.database.models import Device, User
 from bot.services.panel import panel_client
+from bot.services.vpn_config import config_from_panel_result, device_config_text, extract_vpn_link
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +54,8 @@ async def days_left_for(session: AsyncSession, user: User) -> int:
     return int(user.balance_rub // cost)
 
 
-def _extract_vpn_link(result: dict) -> str:
-    link = result.get("vpn_link") or result.get("vpnLink")
-    if not link and result.get("config"):
-        link = "vpn://" + base64.b64encode(result["config"].encode()).decode()
-    return link or ""
+def get_device_config(device: Device) -> str:
+    return device_config_text(device.vpn_config, device.vpn_link)
 
 
 async def add_device(
@@ -90,7 +87,8 @@ async def add_device(
         logger.exception("Panel create_client failed for %s", panel_name)
         raise
 
-    vpn_link = _extract_vpn_link(result)
+    vpn_link = extract_vpn_link(result)
+    vpn_config = config_from_panel_result(result)
     if not vpn_link:
         raise ValueError(f"Панель не вернула vpn://. Ответ: {str(result)[:200]}")
 
@@ -100,6 +98,7 @@ async def add_device(
         platform=platform,
         vpn_client_id=result.get("client_id") or result.get("clientId"),
         vpn_link=vpn_link,
+        vpn_config=vpn_config or None,
     )
     session.add(device)
     await session.commit()

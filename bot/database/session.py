@@ -51,6 +51,11 @@ async def _migrate_sqlite(conn) -> None:
                 sync_conn.execute(text("ALTER TABLE payments ADD COLUMN screenshot_path VARCHAR(512)"))
 
         # Перенос старого единичного VPN из users в таблицу devices
+        if "devices" in inspector.get_table_names():
+            dcols = {c["name"] for c in inspector.get_columns("devices")}
+            if "vpn_config" not in dcols:
+                sync_conn.execute(text("ALTER TABLE devices ADD COLUMN vpn_config TEXT"))
+
         if "devices" in inspector.get_table_names() and "users" in inspector.get_table_names():
             ucols = {c["name"] for c in inspector.get_columns("users")}
             if "vpn_client_id" in ucols:

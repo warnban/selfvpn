@@ -54,6 +54,7 @@ class Device(Base):
     platform: Mapped[str] = mapped_column(String(16), default="other")
     vpn_client_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     vpn_link: Mapped[str | None] = mapped_column(Text, nullable=True)
+    vpn_config: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     user: Mapped["User"] = relationship(back_populates="devices")

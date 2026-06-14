@@ -1,6 +1,6 @@
 from aiogram import F, Router
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import BufferedInputFile, CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
@@ -11,16 +11,18 @@ from bot.keyboards.main import (
     devices_kb,
     platform_choice_kb,
 )
-from bot.messages import vpn_key_instructions
+from bot.messages import device_connect_choice, vpn_conf_instructions, vpn_key_instructions
 from bot.services.devices import (
     add_device,
     days_left_for,
     get_device,
+    get_device_config,
     list_devices,
     platform_label,
     remove_device,
     user_daily_cost,
 )
+from bot.services.vpn_config import safe_conf_filename
 from bot.services.users import get_user_by_telegram_id
 
 router = Router()
@@ -138,8 +140,8 @@ async def cb_device_create(callback: CallbackQuery, session: AsyncSession) -> No
 
     await _safe_edit(
         callback.message,
-        vpn_key_instructions(device.vpn_link, device.name),
-        device_created_kb(),
+        device_connect_choice(device.name),
+        device_created_kb(device.id),
     )
 
 
@@ -158,6 +160,34 @@ async def cb_device_key(callback: CallbackQuery, session: AsyncSession) -> None:
 
     await callback.message.answer(
         vpn_key_instructions(device.vpn_link, device.name),
+        reply_markup=app_download_kb(),
+        parse_mode="HTML",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("dev_conf:"))
+async def cb_device_conf(callback: CallbackQuery, session: AsyncSession) -> None:
+    user = await get_user_by_telegram_id(session, callback.from_user.id)
+    if not user:
+        await callback.answer("Сначала /start", show_alert=True)
+        return
+
+    device_id = int(callback.data.split(":")[1])
+    device = await get_device(session, user, device_id)
+    if not device:
+        await callback.answer("Устройство не найдено", show_alert=True)
+        return
+
+    config = get_device_config(device)
+    if not config:
+        await callback.answer("Conf-файл недоступен для этого устройства", show_alert=True)
+        return
+
+    filename = safe_conf_filename(device.name, device.id)
+    await callback.message.answer_document(
+        BufferedInputFile(config.encode("utf-8"), filename=filename),
+        caption=vpn_conf_instructions(device.name),
         reply_markup=app_download_kb(),
         parse_mode="HTML",
     )

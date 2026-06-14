@@ -110,27 +110,49 @@
           </button>
         </form>
       </div>
-      <div class="device-key-row">
-        <textarea class="key-box-hidden" id="key{{ d.id }}" readonly aria-hidden="true">{{ d.vpn_link }}</textarea>
-        <button type="button" class="key-copy-btn copy-btn" data-target="key{{ d.id }}">
-          <div style="flex:1;min-width:0">
-            <p class="key-copy-label">Ключ подключения</p>
-            <p class="key-copy-preview">{{ d.vpn_link[:42] }}{% if d.vpn_link and d.vpn_link|length > 42 %}…{% endif %}</p>
-          </div>
-          <span class="key-copy-icon">
-            <svg class="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            <svg class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none">
-              <path d="M20 6 9 17l-5-5"/>
-            </svg>
-          </span>
-        </button>
+      <div class="device-connect">
+        <div class="connect-tabs" role="tablist" aria-label="Способ подключения">
+          <button type="button" class="connect-tab active" role="tab" aria-selected="true"
+                  data-mode="key" data-device="{{ d.id }}">🔑 Ключ</button>
+          <button type="button" class="connect-tab" role="tab" aria-selected="false"
+                  data-mode="conf" data-device="{{ d.id }}">📄 Conf-файл</button>
+        </div>
+        <div class="connect-panel connect-panel-key" data-device="{{ d.id }}" data-mode="key">
+          <textarea class="key-box-hidden" id="key{{ d.id }}" readonly aria-hidden="true">{{ d.vpn_link }}</textarea>
+          <button type="button" class="key-copy-btn copy-btn" data-target="key{{ d.id }}">
+            <div style="flex:1;min-width:0">
+              <p class="key-copy-label">Ключ подключения</p>
+              <p class="key-copy-preview">{{ d.vpn_link[:42] }}{% if d.vpn_link and d.vpn_link|length > 42 %}…{% endif %}</p>
+            </div>
+            <span class="key-copy-icon">
+              <svg class="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              <svg class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none">
+                <path d="M20 6 9 17l-5-5"/>
+              </svg>
+            </span>
+          </button>
+        </div>
+        <div class="connect-panel connect-panel-conf hidden" data-device="{{ d.id }}" data-mode="conf">
+          <a class="conf-download-btn" href="/cabinet/{{ user.cabinet_token }}/devices/{{ d.id }}/conf">
+            <div style="flex:1;min-width:0">
+              <p class="key-copy-label">Conf-файл AmneziaWG</p>
+              <p class="key-copy-preview">Скачать .conf для импорта в приложение</p>
+            </div>
+            <span class="key-copy-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </span>
+          </a>
+          <p class="connect-hint">AmneziaVPN → ➕ → «Файл конфигурации»</p>
+        </div>
       </div>
     </div>
     {% endfor %}
     {% else %}
-    <p class="device-empty">У вас пока нет устройств. Добавьте — и получите ключ для Amnezia.</p>
+    <p class="device-empty">У вас пока нет устройств. Добавьте — и получите ключ или conf-файл для Amnezia.</p>
     {% endif %}
 
     {% if device_count < max_devices %}
@@ -156,8 +178,8 @@
     <div class="panel-body">
       <ol class="steps">
         <li>Скачайте <strong>AmneziaVPN</strong> (ссылки ниже)</li>
-        <li>Откройте приложение → <strong>➕</strong> → «Введите ключ»</li>
-        <li>Вставьте ключ устройства и нажмите <strong>Подключить</strong></li>
+        <li>Выберите способ: <strong>ключ</strong> (скопировать) или <strong>conf-файл</strong> (скачать)</li>
+        <li>В приложении: ➕ → «Введите ключ» или «Файл конфигурации» → Подключить</li>
       </ol>
       <div class="app-links">
         <a href="{{ amnezia_android }}" target="_blank" rel="noopener">📱 Android</a>
@@ -228,6 +250,21 @@ async function copyKey(id, btn) {
 
 document.querySelectorAll('.copy-btn').forEach((btn) => {
   btn.addEventListener('click', () => copyKey(btn.dataset.target, btn));
+});
+
+document.querySelectorAll('.connect-tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    const deviceId = tab.dataset.device;
+    const mode = tab.dataset.mode;
+    document.querySelectorAll(`.connect-tab[data-device="${deviceId}"]`).forEach((t) => {
+      const active = t === tab;
+      t.classList.toggle('active', active);
+      t.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    document.querySelectorAll(`.connect-panel[data-device="${deviceId}"]`).forEach((panel) => {
+      panel.classList.toggle('hidden', panel.dataset.mode !== mode);
+    });
+  });
 });
 </script>
 {% endblock %}
