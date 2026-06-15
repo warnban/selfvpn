@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.config import settings
 from bot.database.models import Device, User
 from bot.services.panel import panel_client
-from bot.services.vpn_config import config_from_panel_result, device_config_text, extract_vpn_link
+from bot.services.vpn_config import prepare_panel_vpn, device_config_text, public_vpn_link
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,6 @@ async def days_left_for(session: AsyncSession, user: User) -> int:
 def get_device_config(device: Device) -> str:
     return device_config_text(device.vpn_config, device.vpn_link)
 
-
 async def add_device(
     session: AsyncSession,
     user: User,
@@ -90,8 +89,7 @@ async def add_device(
         logger.exception("Panel create_client failed for %s", panel_name)
         raise
 
-    vpn_link = extract_vpn_link(result)
-    vpn_config = config_from_panel_result(result)
+    vpn_link, vpn_config = prepare_panel_vpn(result)
     if not vpn_link:
         raise ValueError(f"Сервер не вернул ключ подключения. Ответ: {str(result)[:200]}")
 

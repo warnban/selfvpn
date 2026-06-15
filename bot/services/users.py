@@ -9,6 +9,7 @@ import logging
 from bot.config import settings
 from bot.database.models import Payment, PaymentStatus, Referral, User
 from bot.services.panel import panel_client
+from bot.services.vpn_config import prepare_panel_vpn, public_vpn_link
 
 logger = logging.getLogger(__name__)
 
@@ -202,7 +203,7 @@ async def reject_payment(session: AsyncSession, payment: Payment, comment: str |
 
 async def provision_vpn(session: AsyncSession, user: User) -> str:
     if user.vpn_client_id and user.vpn_active and user.vpn_link:
-        return user.vpn_link
+        return public_vpn_link(user.vpn_link)
 
     if user.balance_rub < settings.daily_price_rub:
         raise ValueError("Недостаточно средств на балансе")
@@ -217,11 +218,7 @@ async def provision_vpn(session: AsyncSession, user: User) -> str:
     user.vpn_client_id = result.get("client_id") or result.get("clientId")
     user.vpn_active = True
 
-    vpn_link = result.get("vpn_link") or result.get("vpnLink")
-    if not vpn_link and result.get("config"):
-        import base64
-
-        vpn_link = "vpn://" + base64.b64encode(result["config"].encode()).decode()
+    vpn_link, _ = prepare_panel_vpn(result)
     if not vpn_link:
         logger.error("Panel response without vpn link: %s", list(result.keys()))
         raise ValueError(f"Сервер не вернул ключ подключения. Ответ: {str(result)[:200]}")

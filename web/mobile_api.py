@@ -23,7 +23,7 @@ from bot.services.devices import (
     user_daily_cost,
 )
 from bot.services.users import get_user_by_cabinet_token
-from bot.services.vpn_config import extract_vpn_link
+from bot.services.vpn_config import extract_vpn_link, public_vpn_link
 
 router = APIRouter(prefix="/api/mobile/v1", tags=["mobile"])
 
@@ -169,9 +169,9 @@ async def device_vpn(
     if not device:
         raise HTTPException(status_code=404, detail="Устройство не найдено")
     config = get_device_config(device)
-    link = device.vpn_link
+    link = public_vpn_link(device.vpn_link)
     if not link and config:
-        link = extract_vpn_link({"config": config})
+        link = public_vpn_link(extract_vpn_link({"config": config}))
     if not link and not config:
         raise HTTPException(status_code=404, detail="VPN-ключ недоступен")
     return VpnConfigResponse(
