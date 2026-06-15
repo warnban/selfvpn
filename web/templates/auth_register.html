@@ -1,0 +1,33 @@
+{% extends "auth_base.html" %}
+{% set title = "Регистрация" %}
+
+{% block auth_form %}
+{% if not smtp_enabled %}
+<div class="alert alert-error">Регистрация временно недоступна — почтовый сервер не настроен.</div>
+{% endif %}
+<form method="post" action="/auth/register" class="card stack" style="gap:16px">
+  {% if ref %}<input type="hidden" name="ref" value="{{ ref }}">{% endif %}
+  <div>
+    <label for="display_name">Имя (необязательно)</label>
+    <input type="text" name="display_name" id="display_name" placeholder="Как к вам обращаться">
+  </div>
+  <div>
+    <label for="email">Email</label>
+    <input type="email" name="email" id="email" required autofocus placeholder="you@example.com">
+  </div>
+  <div>
+    <label for="password">Пароль</label>
+    <input type="password" name="password" id="password" required minlength="8" placeholder="Минимум 8 символов">
+  </div>
+  <button class="btn btn-block" type="submit" {% if not smtp_enabled %}disabled{% endif %}>Создать аккаунт</button>
+</form>
+{% endblock %}
+
+{% block auth_footer %}
+<p class="muted" style="text-align:center;margin-top:16px">
+  Уже есть аккаунт? <a href="/auth/login">Войти</a>
+</p>
+<p class="muted" style="text-align:center;margin-top:12px;font-size:13px">
+  2 дня бесплатно · подтвердите email после регистрации
+</p>
+{% endblock %}

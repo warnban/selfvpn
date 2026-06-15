@@ -7,28 +7,83 @@ from bot.config import settings
 from bot.keyboards.main import BTN_ABOUT, BTN_CABINET, BTN_INVITE, BTN_SUPPORT, invite_kb, menu_for
 from bot.messages import new_user_welcome
 from bot.services.devices import count_devices, days_left_for
+from bot.services.auth import link_telegram_to_user, load_telegram_link_user_id
 from bot.services.users import count_referrals, get_user_by_telegram_id, register_user
 
 router = Router()
 
 
+def parse_start_payload(message: Message) -> tuple[str | None, int | None]:
+    """Returns (action, value) where action is 'ref', 'link', or None."""
+    if not message.text:
+        return None, None
+    parts = message.text.split(maxsplit=1)
+    if len(parts) < 2:
+        return None, None
+    payload = parts[1].strip()
+    if payload.startswith("ref_"):
+        try:
+            return "ref", int(payload.replace("ref_", ""))
+        except ValueError:
+            return None, None
+    if payload.startswith("link_"):
+        return "link", None
+    return None, None
+
+
 def parse_referrer(message: Message) -> int | None:
+    action, value = parse_start_payload(message)
+    if action == "ref":
+        return value
+    return None
+
+
+def parse_link_token(message: Message) -> str | None:
     if not message.text:
         return None
     parts = message.text.split(maxsplit=1)
     if len(parts) < 2:
         return None
     payload = parts[1].strip()
-    if payload.startswith("ref_"):
-        try:
-            return int(payload.replace("ref_", ""))
-        except ValueError:
-            return None
+    if payload.startswith("link_"):
+        return payload.replace("link_", "", 1)
     return None
 
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, session: AsyncSession) -> None:
+    link_token = parse_link_token(message)
+    if link_token:
+        user_id = load_telegram_link_user_id(link_token)
+        if not user_id:
+            await message.answer("Ссылка привязки устарела. Запросите новую в личном кабинете.")
+            return
+        from bot.services.users import get_user_by_id
+
+        user = await get_user_by_id(session, user_id)
+        if not user:
+            await message.answer("Аккаунт не найден.")
+            return
+        err = await link_telegram_to_user(
+            session,
+            user,
+            telegram_id=message.from_user.id,
+            username=message.from_user.username,
+            first_name=message.from_user.first_name,
+        )
+        if err:
+            await message.answer(f"❌ {err}")
+            return
+        cabinet_link = settings.cabinet_url(user.cabinet_token)
+        await message.answer(
+            f"✅ Telegram привязан к аккаунту <b>{user.email}</b>!\n\n"
+            f"🌐 <a href=\"{cabinet_link}\">Личный кабинет</a>",
+            reply_markup=menu_for(message.from_user.id),
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
+        return
+
     referrer_tid = parse_referrer(message)
     user, is_new = await register_user(
         session,

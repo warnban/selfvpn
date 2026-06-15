@@ -1,10 +1,13 @@
 import logging
+import re
 
 from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from bot.config import settings
+from bot.database.models import User
+from bot.services.email import send_notification_email
 
 logger = logging.getLogger(__name__)
 
@@ -26,28 +29,68 @@ async def send_user_message(telegram_id: int, text: str) -> bool:
         await bot.session.close()
 
 
-async def notify_balance_credited(telegram_id: int, amount: float, balance: float, comment: str | None = None) -> None:
+def _html_to_plain(text: str) -> str:
+    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.I)
+    text = re.sub(r"<[^>]+>", "", text)
+    return text.strip()
+
+
+async def notify_user(
+    user: User,
+    text: str,
+    *,
+    subject: str = "Уведомление",
+) -> bool:
+    if user.telegram_id:
+        return await send_user_message(user.telegram_id, text)
+    if user.email and user.email_verified:
+        return await send_notification_email(user.email, subject, _html_to_plain(text))
+    return False
+
+
+async def notify_balance_credited(
+    telegram_id: int | None,
+    amount: float,
+    balance: float,
+    comment: str | None = None,
+    *,
+    user: User | None = None,
+) -> None:
     text = (
         f"✅ На ваш баланс начислено <b>{amount:.0f} ₽</b>\n"
         f"💰 Текущий баланс: <b>{balance:.0f} ₽</b>"
     )
     if comment:
         text += f"\n\n📝 {comment}"
-    await send_user_message(telegram_id, text)
+    if user:
+        await notify_user(user, text, subject="Начисление на баланс")
+    elif telegram_id:
+        await send_user_message(telegram_id, text)
 
 
-async def notify_payment_approved(telegram_id: int, amount: float, days: int, balance: float) -> None:
-    await send_user_message(
-        telegram_id,
+async def notify_payment_approved(
+    telegram_id: int | None,
+    amount: float,
+    days: int,
+    balance: float,
+    *,
+    user: User | None = None,
+) -> None:
+    text = (
         f"✅ Оплата подтверждена!\n"
         f"📦 Пакет: {days} дн.\n"
         f"💳 Сумма: {amount:.0f} ₽\n"
-        f"💰 Баланс: {balance:.0f} ₽",
+        f"💰 Баланс: {balance:.0f} ₽"
     )
+    if user:
+        await notify_user(user, text, subject="Оплата подтверждена")
+    elif telegram_id:
+        await send_user_message(telegram_id, text)
 
 
-async def notify_payment_rejected(telegram_id: int) -> None:
-    await send_user_message(
-        telegram_id,
-        "❌ Платёж не подтверждён. Если это ошибка — напишите администратору.",
-    )
+async def notify_payment_rejected(telegram_id: int | None, *, user: User | None = None) -> None:
+    text = "❌ Платёж не подтверждён. Если это ошибка — напишите администратору."
+    if user:
+        await notify_user(user, text, subject="Платёж отклонён")
+    elif telegram_id:
+        await send_user_message(telegram_id, text)

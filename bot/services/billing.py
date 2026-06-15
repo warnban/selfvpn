@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.config import settings
 from bot.database.models import Device, User
 from bot.database.session import async_session
-from bot.services.notify import send_user_message
+from bot.services.notify import notify_user
 from bot.services.panel import panel_client
 
 logger = logging.getLogger(__name__)
@@ -55,12 +55,15 @@ async def process_daily_billing() -> None:
             if removed:
                 await session.commit()
                 names = ", ".join(removed)
-                await send_user_message(
-                    user.telegram_id,
+                from bot.services.notify import notify_user
+
+                await notify_user(
+                    user,
                     "⚠️ Недостаточно средств на балансе.\n"
                     f"Отключены устройства: <b>{names}</b>\n\n"
                     f"💰 Баланс: {user.balance_rub:.0f} ₽\n"
                     "Пополни баланс и добавь устройства заново.",
+                    subject="Недостаточно средств",
                 )
 
         await session.commit()

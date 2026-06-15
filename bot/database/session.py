@@ -39,6 +39,16 @@ async def _migrate_sqlite(conn) -> None:
                 sync_conn.execute(text("ALTER TABLE users ADD COLUMN cabinet_token VARCHAR(64)"))
             if "vpn_link" not in cols:
                 sync_conn.execute(text("ALTER TABLE users ADD COLUMN vpn_link TEXT"))
+            if "display_name" not in cols:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN display_name VARCHAR(255)"))
+            if "email" not in cols:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN email VARCHAR(255)"))
+            if "password_hash" not in cols:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255)"))
+            if "email_verified" not in cols:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT 0"))
+            if "auth_provider" not in cols:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN auth_provider VARCHAR(16) DEFAULT 'telegram'"))
             rows = sync_conn.execute(text("SELECT id FROM users WHERE cabinet_token IS NULL OR cabinet_token = ''")).fetchall()
             for (user_id,) in rows:
                 sync_conn.execute(

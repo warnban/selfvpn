@@ -42,6 +42,13 @@ class Settings(BaseSettings):
     freekassa_secret_1: str = ""
     freekassa_secret_2: str = ""
 
+    smtp_host: str = ""
+    smtp_port: int = 465
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    smtp_use_ssl: bool = True
+
     @property
     def freekassa_enabled(self) -> bool:
         return bool(
@@ -94,6 +101,26 @@ class Settings(BaseSettings):
     def support_tg_url(self) -> str:
         handle = self.support_tg_handle
         return f"https://t.me/{handle}" if handle else ""
+
+    @property
+    def smtp_enabled(self) -> bool:
+        return bool(self.smtp_host and self.smtp_user and self.smtp_password)
+
+    @property
+    def smtp_from_address(self) -> str:
+        return self.smtp_from or self.smtp_user
+
+    def register_url(self, ref: int | None = None) -> str:
+        url = f"{self.web_base_url.rstrip('/')}/auth/register"
+        if ref:
+            url += f"?ref={ref}"
+        return url
+
+    def login_url(self) -> str:
+        return f"{self.web_base_url.rstrip('/')}/auth/login"
+
+    def cabinet_session_url(self) -> str:
+        return f"{self.web_base_url.rstrip('/')}/cabinet"
 
 
 settings = Settings()

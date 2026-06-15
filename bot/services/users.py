@@ -55,6 +55,7 @@ async def register_user(
         telegram_id=telegram_id,
         username=username,
         first_name=first_name,
+        auth_provider="telegram",
         balance_rub=settings.trial_balance_rub,
         referrer_id=referrer.id if referrer else None,
         last_billed_at=datetime.utcnow(),

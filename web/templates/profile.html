@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Профиль — {{ brand_name }}{% endblock %}
+{% block body_class %}theme-cabinet{% endblock %}
+{% block wrap_class %}wrap--cabinet{% endblock %}
+
+{% block header %}
+<header class="header">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+    </div>
+    <div>
+      <p class="brand-label">Профиль</p>
+      <h1>{{ display_name }}</h1>
+    </div>
+  </div>
+  <a class="btn btn-secondary btn-sm" href="/cabinet">← Кабинет</a>
+</header>
+{% endblock %}
+
+{% block content %}
+<main class="stack">
+  {% if error == 'mismatch' %}
+  <div class="alert alert-error">Пароли не совпадают</div>
+  {% elif error %}
+  <div class="alert alert-error">{{ error }}</div>
+  {% endif %}
+  {% if message == 'password_changed' %}
+  <div class="alert alert-success">Пароль обновлён</div>
+  {% endif %}
+
+  <div class="card">
+    <h2>Аккаунт</h2>
+    <div class="row"><span>Email</span><strong>{{ user.email or '—' }}</strong></div>
+    {% if user.email %}
+    <div class="row">
+      <span>Подтверждён</span>
+      <strong>{% if user.email_verified %}✓ Да{% else %}Нет{% endif %}</strong>
+    </div>
+    {% if not user.email_verified %}
+    <form method="post" action="/auth/resend-verification" style="margin-top:12px">
+      <button class="btn btn-secondary btn-block" type="submit">Отправить письмо повторно</button>
+    </form>
+    {% endif %}
+    {% endif %}
+    <div class="row"><span>Telegram</span><strong>{% if has_telegram %}@{{ user.username or 'привязан' }}{% else %}Не привязан{% endif %}</strong></div>
+    {% if telegram_link_token %}
+    <p class="muted" style="margin-top:12px">Привяжите Telegram для оплаты Stars и уведомлений:</p>
+    <a class="btn btn-block" href="https://t.me/{{ bot_username }}?start=link_{{ telegram_link_token }}" target="_blank" rel="noopener">
+      Привязать Telegram
+    </a>
+    {% endif %}
+  </div>
+
+  {% if has_password %}
+  <div class="card">
+    <h2>Сменить пароль</h2>
+    <form method="post" action="/cabinet/profile/password" class="stack" style="gap:12px">
+      <div>
+        <label for="current_password">Текущий пароль</label>
+        <input type="password" name="current_password" id="current_password" required>
+      </div>
+      <div>
+        <label for="new_password">Новый пароль</label>
+        <input type="password" name="new_password" id="new_password" required minlength="8">
+      </div>
+      <div>
+        <label for="new_password2">Повторите</label>
+        <input type="password" name="new_password2" id="new_password2" required minlength="8">
+      </div>
+      <button class="btn btn-block" type="submit">Обновить пароль</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h2>Безопасность</h2>
+    <p class="muted">Секретная ссылка кабинета (для закладок и API):</p>
+    <code style="word-break:break-all;font-size:12px">{{ user.cabinet_token[:12] }}…</code>
+    <p class="muted" style="margin-top:8px;font-size:13px">Полная ссылка: <a href="/cabinet/{{ user.cabinet_token }}">/cabinet/…</a></p>
+  </div>
+
+  <a class="btn btn-secondary btn-block" href="/auth/logout">Выйти</a>
+</main>
+{% endblock %}

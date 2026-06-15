@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, Zap, Lock, Eye, Globe, Clock, ChevronDown, Star, Send, CreditCard, Users, Copy, Check, Menu, X } from "lucide-react";
+import { Shield, Zap, Lock, Eye, Globe, Clock, ChevronDown, Star, Send, CreditCard, Users, Copy, Check, Menu, X, Monitor } from "lucide-react";
 
 const LIME = "#b8ff00";
 
@@ -35,6 +35,13 @@ function Nav() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <a
+            href="/auth/login"
+            style={{ borderColor: "rgba(255,255,255,0.15)", fontFamily: "'Barlow Condensed', sans-serif" }}
+            className="hidden sm:inline-flex px-4 py-2 text-xs font-bold tracking-wide uppercase border text-white hover:border-white/40 transition-colors"
+          >
+            Войти
+          </a>
           <a
             href="#pricing"
             style={{ backgroundColor: LIME, fontFamily: "'Barlow Condensed', sans-serif", color: "#070707" }}
@@ -116,23 +123,44 @@ function Hero() {
             </h1>
 
             <p className="text-[#888] text-base sm:text-lg mb-8 sm:mb-10 max-w-md" style={{ fontFamily: "'Manrope', sans-serif" }}>
-              Персональный интернет-канал на протоколе AmneziaWG. Стабильно, быстро и без лишней суеты — подключение в Telegram за пару минут.
+              Персональный интернет-канал на протоколе AmneziaWG. Подключение через Telegram или веб-панель за пару минут.
             </p>
+
+            <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
+              <a
+                href="https://t.me/anfikvpnbot"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ backgroundColor: LIME, fontFamily: "'Barlow Condensed', sans-serif", color: "#070707" }}
+                className="px-6 sm:px-8 py-3.5 sm:py-4 text-lg sm:text-xl font-black uppercase tracking-wide text-center hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                <Send className="w-5 h-5" />
+                Через Telegram →
+              </a>
+              <a
+                href="/auth/register"
+                style={{ borderColor: "rgba(255,255,255,0.15)", fontFamily: "'Barlow Condensed', sans-serif" }}
+                className="px-6 sm:px-8 py-3.5 sm:py-4 text-lg sm:text-xl font-bold uppercase tracking-wide border text-white text-center hover:border-white/40 transition-colors flex items-center justify-center gap-2"
+              >
+                <Monitor className="w-5 h-5" style={{ color: LIME }} />
+                Веб-панель
+              </a>
+            </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 sm:mb-10">
               <a
                 href="#pricing"
-                style={{ backgroundColor: LIME, fontFamily: "'Barlow Condensed', sans-serif", color: "#070707" }}
-                className="px-6 sm:px-8 py-3.5 sm:py-4 text-lg sm:text-xl font-black uppercase tracking-wide text-center hover:opacity-90 transition-opacity"
+                style={{ fontFamily: "'JetBrains Mono', monospace", color: "#666" }}
+                className="text-sm text-center sm:text-left hover:text-white transition-colors"
               >
-                2 дня бесплатно →
+                Смотреть тарифы ↓
               </a>
               <a
                 href="#features"
-                style={{ borderColor: "rgba(255,255,255,0.15)", fontFamily: "'Barlow Condensed', sans-serif" }}
-                className="px-6 sm:px-8 py-3.5 sm:py-4 text-lg sm:text-xl font-bold uppercase tracking-wide border text-white text-center hover:border-white/40 transition-colors"
+                style={{ fontFamily: "'JetBrains Mono', monospace", color: "#666" }}
+                className="text-sm text-center sm:text-left hover:text-white transition-colors"
               >
-                Как это работает
+                Как это работает →
               </a>
             </div>
 
@@ -382,20 +410,31 @@ function Pricing() {
               </div>
             </div>
 
-            <a
-              href="https://t.me/anfikvpnbot"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ backgroundColor: LIME, fontFamily: "'Barlow Condensed', sans-serif", color: "#070707" }}
-              className="block w-full py-3.5 sm:py-4 text-lg sm:text-xl font-black uppercase tracking-wide text-center hover:opacity-90 transition-opacity"
-            >
-              Попробовать 2 дня бесплатно →
-            </a>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 sm:mb-8">
+              <a
+                href="https://t.me/anfikvpnbot"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ backgroundColor: LIME, fontFamily: "'Barlow Condensed', sans-serif", color: "#070707" }}
+                className="py-3.5 sm:py-4 text-base sm:text-lg font-black uppercase tracking-wide text-center hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                Telegram
+              </a>
+              <a
+                href="/auth/register"
+                style={{ borderColor: "rgba(184,255,0,0.4)", fontFamily: "'Barlow Condensed', sans-serif" }}
+                className="py-3.5 sm:py-4 text-base sm:text-lg font-bold uppercase tracking-wide border text-white text-center hover:border-white/40 transition-colors flex items-center justify-center gap-2"
+              >
+                <Monitor className="w-4 h-4" style={{ color: LIME }} />
+                Веб-панель
+              </a>
+            </div>
             <p
-              className="text-center mt-3 text-xs"
+              className="text-center text-xs"
               style={{ color: "#444", fontFamily: "'JetBrains Mono', monospace" }}
             >
-              без привязки карты · отмена в любой момент
+              2 дня бесплатно · без привязки карты · отмена в любой момент
             </p>
           </div>
 

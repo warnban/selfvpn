@@ -1,0 +1,24 @@
+{% extends "auth_base.html" %}
+{% set title = "Сброс пароля" %}
+
+{% block auth_form %}
+{% if error == 'smtp' %}
+<div class="alert alert-error">Сброс пароля временно недоступен.</div>
+{% endif %}
+{% if message == 'sent' %}
+<div class="alert alert-success">Если email зарегистрирован — мы отправили ссылку для сброса пароля.</div>
+{% endif %}
+<form method="post" action="/auth/forgot" class="card stack" style="gap:16px">
+  <div>
+    <label for="email">Email</label>
+    <input type="email" name="email" id="email" required autofocus placeholder="you@example.com">
+  </div>
+  <button class="btn btn-block" type="submit">Отправить ссылку</button>
+</form>
+{% endblock %}
+
+{% block auth_footer %}
+<p class="muted" style="text-align:center;margin-top:16px">
+  <a href="/auth/login">← Вернуться ко входу</a>
+</p>
+{% endblock %}

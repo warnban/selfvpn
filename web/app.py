@@ -4,31 +4,25 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.sessions import SessionMiddleware
 
 from bot.config import settings
 from bot.database.models import Payment, PaymentStatus, User
-from bot.database.session import async_session, init_db
+from bot.database.session import init_db
 from bot.services.notify import notify_balance_credited, notify_payment_approved, notify_payment_rejected
 from bot.services.devices import (
     add_device,
-    count_devices,
-    days_left_for,
     get_device,
     get_device_config,
-    list_devices,
     platform_label,
     remove_device,
-    user_daily_cost,
 )
 from bot.services.app_settings import get_stars_per_day, set_stars_per_day
 from bot.services.users import (
     admin_credit_balance,
     approve_payment,
-    count_referrals,
     create_payment_request,
     cancel_pending_freekassa_for_user,
     get_user_by_cabinet_token,
@@ -46,13 +40,21 @@ from bot.services.freekassa import (
 )
 from bot.messages import AMNEZIA_ANDROID, AMNEZIA_WG_APPLE
 from bot.services.vpn_config import safe_conf_filename
+from web.auth_routes import router as auth_router
+from web.cabinet_helpers import (
+    build_cabinet_context,
+    cabinet_base_path,
+    get_user_from_session,
+    login_session,
+)
+from web.deps import get_db, templates
 from web.mobile_api import router as mobile_router
 
 app = FastAPI(title="SelfVPN Cabinet")
 app.include_router(mobile_router)
+app.include_router(auth_router)
 app.add_middleware(SessionMiddleware, secret_key=settings.web_secret_key)
 
-templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 templates.env.globals["brand_name"] = settings.brand_name
 templates.env.globals["support_tg"] = settings.support_tg_handle
 templates.env.globals["support_tg_url"] = settings.support_tg_url()
@@ -71,9 +73,19 @@ uploads_path.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session() as session:
-        yield session
+def _payment_redirect_cabinet(user: User, query: str) -> str:
+    return f"/cabinet/{user.cabinet_token}{query}"
+
+
+async def _render_cabinet(
+    request: Request,
+    user: User,
+    session: AsyncSession,
+    *,
+    via_session: bool,
+):
+    ctx = await build_cabinet_context(request, user, session, via_session=via_session)
+    return templates.TemplateResponse(request, "cabinet.html", ctx)
 
 
 def is_admin(request: Request) -> bool:
@@ -104,6 +116,7 @@ async def robots_txt() -> PlainTextResponse:
                 "Allow: /",
                 "Disallow: /admin",
                 "Disallow: /cabinet",
+                "Disallow: /auth",
                 "Disallow: /payment",
                 "",
                 f"Sitemap: {base}/sitemap.xml",
@@ -139,38 +152,38 @@ async def about(request: Request) -> HTMLResponse:
     )
 
 
-@app.get("/cabinet/{token}", response_class=HTMLResponse)
-async def cabinet(request: Request, token: str, session: AsyncSession = Depends(get_db)):
-    user = await get_user_by_cabinet_token(session, token)
-    if not user:
-        return templates.TemplateResponse(
-            request,
-            "error.html",
-            {"title": "Не найдено", "message": "Ссылка недействительна."},
-            status_code=404,
-        )
+CABINET_RESERVED = frozenset({"pay", "profile", "devices", "add"})
 
-    refs = await count_referrals(session, user)
-    devices = await list_devices(session, user)
-    cost = await user_daily_cost(session, user)
-    left = await days_left_for(session, user)
-    return templates.TemplateResponse(
-        request,
-        "cabinet.html",
-        {
-            "user": user,
-            "days_left": left,
-            "daily_price": settings.daily_price_rub,
-            "daily_cost": cost,
-            "devices": devices,
-            "device_count": len(devices),
-            "referrals": refs,
-            "referral_bonus": settings.referral_bonus_rub,
-            "payment_card": settings.payment_card,
-            "payment_bank": settings.payment_bank,
-            "payment_holder": settings.payment_holder,
-        },
-    )
+
+def _is_cabinet_token(value: str) -> bool:
+    return value not in CABINET_RESERVED and len(value) >= 16
+
+
+@app.get("/cabinet", response_class=HTMLResponse)
+async def cabinet_session(request: Request, session: AsyncSession = Depends(get_db)):
+    user = await get_user_from_session(request, session)
+    if not user:
+        return RedirectResponse("/auth/login?next=/cabinet", status_code=303)
+    return await _render_cabinet(request, user, session, via_session=True)
+
+
+@app.post("/cabinet/devices/add")
+async def cabinet_session_device_add(
+    request: Request,
+    platform: str = Form("other"),
+    session: AsyncSession = Depends(get_db),
+):
+    user = await get_user_from_session(request, session)
+    if not user:
+        return RedirectResponse("/auth/login", status_code=303)
+    base = cabinet_base_path(user, via_session=True)
+    try:
+        await add_device(session, user, platform)
+    except Exception as exc:
+        from urllib.parse import quote
+
+        return RedirectResponse(f"{base}?err={quote(str(exc)[:120])}", status_code=303)
+    return RedirectResponse(f"{base}#devices", status_code=303)
 
 
 @app.post("/cabinet/{token}/devices/add")
@@ -179,6 +192,8 @@ async def cabinet_device_add(
     platform: str = Form("other"),
     session: AsyncSession = Depends(get_db),
 ):
+    if not _is_cabinet_token(token):
+        return RedirectResponse("/cabinet", status_code=303)
     user = await get_user_by_cabinet_token(session, token)
     if not user:
         return RedirectResponse("/", status_code=303)
@@ -191,17 +206,44 @@ async def cabinet_device_add(
     return RedirectResponse(f"/cabinet/{token}#devices", status_code=303)
 
 
+@app.post("/cabinet/devices/{device_id}/remove")
+async def cabinet_session_device_remove(
+    request: Request,
+    device_id: int,
+    session: AsyncSession = Depends(get_db),
+):
+    user = await get_user_from_session(request, session)
+    if not user:
+        return RedirectResponse("/auth/login", status_code=303)
+    await remove_device(session, user, device_id)
+    return RedirectResponse("/cabinet#devices", status_code=303)
+
+
 @app.post("/cabinet/{token}/devices/{device_id}/remove")
 async def cabinet_device_remove(
     token: str,
     device_id: int,
     session: AsyncSession = Depends(get_db),
 ):
+    if not _is_cabinet_token(token):
+        return RedirectResponse("/cabinet", status_code=303)
     user = await get_user_by_cabinet_token(session, token)
     if not user:
         return RedirectResponse("/", status_code=303)
     await remove_device(session, user, device_id)
     return RedirectResponse(f"/cabinet/{token}#devices", status_code=303)
+
+
+@app.get("/cabinet/devices/{device_id}/conf")
+async def cabinet_session_device_conf(
+    request: Request,
+    device_id: int,
+    session: AsyncSession = Depends(get_db),
+):
+    user = await get_user_from_session(request, session)
+    if not user:
+        return PlainTextResponse("Unauthorized", status_code=401)
+    return await _device_conf_response(session, user, device_id)
 
 
 @app.get("/cabinet/{token}/devices/{device_id}/conf")
@@ -210,10 +252,15 @@ async def cabinet_device_conf(
     device_id: int,
     session: AsyncSession = Depends(get_db),
 ):
+    if not _is_cabinet_token(token):
+        return PlainTextResponse("Not found", status_code=404)
     user = await get_user_by_cabinet_token(session, token)
     if not user:
         return PlainTextResponse("Not found", status_code=404)
+    return await _device_conf_response(session, user, device_id)
 
+
+async def _device_conf_response(session: AsyncSession, user: User, device_id: int):
     device = await get_device(session, user, device_id)
     if not device:
         return PlainTextResponse("Not found", status_code=404)
@@ -230,24 +277,51 @@ async def cabinet_device_conf(
     )
 
 
+def _pay_context(user: User) -> dict:
+    return {
+        "user": user,
+        "daily_price": settings.daily_price_rub,
+        "presets": [7, 14, 30, 60, 90],
+        "payment_card": settings.payment_card,
+        "payment_bank": settings.payment_bank,
+        "payment_holder": settings.payment_holder,
+        "freekassa_enabled": settings.freekassa_enabled,
+        "cabinet_base": cabinet_base_path(user, via_session=not user.cabinet_token),
+    }
+
+
+@app.get("/cabinet/pay", response_class=HTMLResponse)
+async def cabinet_session_pay_form(request: Request, session: AsyncSession = Depends(get_db)):
+    user = await get_user_from_session(request, session)
+    if not user:
+        return RedirectResponse("/auth/login?next=/cabinet/pay", status_code=303)
+    ctx = _pay_context(user)
+    ctx["cabinet_base"] = "/cabinet"
+    return templates.TemplateResponse(request, "pay.html", ctx)
+
+
 @app.get("/cabinet/{token}/pay", response_class=HTMLResponse)
 async def cabinet_pay_form(request: Request, token: str, session: AsyncSession = Depends(get_db)):
+    if not _is_cabinet_token(token):
+        return RedirectResponse("/cabinet/pay", status_code=303)
     user = await get_user_by_cabinet_token(session, token)
     if not user:
         return RedirectResponse("/", status_code=303)
-    return templates.TemplateResponse(
-        request,
-        "pay.html",
-        {
-            "user": user,
-            "daily_price": settings.daily_price_rub,
-            "presets": [7, 14, 30, 60, 90],
-            "payment_card": settings.payment_card,
-            "payment_bank": settings.payment_bank,
-            "payment_holder": settings.payment_holder,
-            "freekassa_enabled": settings.freekassa_enabled,
-        },
-    )
+    ctx = _pay_context(user)
+    ctx["cabinet_base"] = f"/cabinet/{token}"
+    return templates.TemplateResponse(request, "pay.html", ctx)
+
+
+@app.post("/cabinet/pay")
+async def cabinet_session_pay_submit(
+    request: Request,
+    days: int = Form(...),
+    session: AsyncSession = Depends(get_db),
+):
+    user = await get_user_from_session(request, session)
+    if not user:
+        return RedirectResponse("/auth/login", status_code=303)
+    return await _cabinet_pay_submit(request, user, days, session, pay_base="/cabinet")
 
 
 @app.post("/cabinet/{token}/pay")
@@ -257,15 +331,27 @@ async def cabinet_pay_submit(
     days: int = Form(...),
     session: AsyncSession = Depends(get_db),
 ):
+    if not _is_cabinet_token(token):
+        return RedirectResponse("/cabinet/pay", status_code=303)
     user = await get_user_by_cabinet_token(session, token)
     if not user:
         return RedirectResponse("/", status_code=303)
+    return await _cabinet_pay_submit(request, user, days, session, pay_base=f"/cabinet/{token}")
 
+
+async def _cabinet_pay_submit(
+    request: Request,
+    user: User,
+    days: int,
+    session: AsyncSession,
+    *,
+    pay_base: str,
+):
     if days < 1 or days > 365:
-        return RedirectResponse(f"/cabinet/{token}/pay", status_code=303)
+        return RedirectResponse(f"{pay_base}/pay", status_code=303)
 
     if not settings.freekassa_enabled:
-        return RedirectResponse(f"/cabinet/{token}/pay", status_code=303)
+        return RedirectResponse(f"{pay_base}/pay", status_code=303)
 
     amount = settings.price_for_days(days)
     await cancel_pending_freekassa_for_user(session, user)
@@ -291,6 +377,22 @@ async def cabinet_pay_submit(
             "days": days,
         },
     )
+
+
+@app.get("/cabinet/{token}", response_class=HTMLResponse)
+async def cabinet(request: Request, token: str, session: AsyncSession = Depends(get_db)):
+    if not _is_cabinet_token(token):
+        return RedirectResponse("/cabinet", status_code=303)
+    user = await get_user_by_cabinet_token(session, token)
+    if not user:
+        return templates.TemplateResponse(
+            request,
+            "error.html",
+            {"title": "Не найдено", "message": "Ссылка недействительна."},
+            status_code=404,
+        )
+    login_session(request, user)
+    return await _render_cabinet(request, user, session, via_session=False)
 
 
 async def _resolve_cabinet_token(request: Request, session: AsyncSession) -> str | None:
@@ -357,12 +459,16 @@ async def payment_notify(request: Request, session: AsyncSession = Depends(get_d
         payment.amount_rub,
         payment.days_purchased or 0,
         user.balance_rub,
+        user=user,
     )
     return PlainTextResponse("YES")
 
 
 @app.get("/payment/success", response_class=HTMLResponse)
 async def payment_success(request: Request, session: AsyncSession = Depends(get_db)):
+    user = await get_user_from_session(request, session)
+    if user:
+        return RedirectResponse("/cabinet?paid=ok", status_code=303)
     token = await _resolve_cabinet_token(request, session)
     if token:
         return RedirectResponse(f"/cabinet/{token}?paid=ok", status_code=303)
@@ -388,6 +494,9 @@ async def payment_fail(request: Request, session: AsyncSession = Depends(get_db)
         except (ValueError, TypeError):
             pass
 
+    user = await get_user_from_session(request, session)
+    if user:
+        return RedirectResponse("/cabinet?paid=fail", status_code=303)
     token = await _resolve_cabinet_token(request, session)
     if token:
         return RedirectResponse(f"/cabinet/{token}?paid=fail", status_code=303)
@@ -482,6 +591,7 @@ async def admin_credit(
         amount,
         user.balance_rub,
         comment or "Начисление администратором",
+        user=user,
     )
     return RedirectResponse("/admin?credited=1", status_code=303)
 
@@ -507,6 +617,7 @@ async def admin_approve_payment_web(
         payment.amount_rub,
         payment.days_purchased or 0,
         user.balance_rub,
+        user=user,
     )
     return RedirectResponse("/admin?approved=1", status_code=303)
 
@@ -529,7 +640,7 @@ async def admin_reject_payment_web(
     await reject_payment(session, payment)
     user = await session.get(User, payment.user_id)
     if user:
-        await notify_payment_rejected(user.telegram_id)
+        await notify_payment_rejected(user.telegram_id, user=user)
     return RedirectResponse("/admin?rejected=1", status_code=303)
 
 

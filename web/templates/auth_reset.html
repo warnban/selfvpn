@@ -1,0 +1,21 @@
+{% extends "auth_base.html" %}
+{% set title = "Новый пароль" %}
+
+{% block auth_form %}
+{% if error == 'mismatch' %}
+<div class="alert alert-error">Пароли не совпадают</div>
+{% elif error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+<form method="post" action="/auth/reset/{{ token }}" class="card stack" style="gap:16px">
+  <div>
+    <label for="password">Новый пароль</label>
+    <input type="password" name="password" id="password" required minlength="8">
+  </div>
+  <div>
+    <label for="password2">Повторите пароль</label>
+    <input type="password" name="password2" id="password2" required minlength="8">
+  </div>
+  <button class="btn btn-block" type="submit">Сохранить пароль</button>
+</form>
+{% endblock %}

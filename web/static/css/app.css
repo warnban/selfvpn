@@ -536,6 +536,55 @@ body::before {
   color: var(--primary);
 }
 
+.setup-guide {
+  border: 1px solid var(--primary-border);
+  background: var(--primary-dim);
+}
+
+.setup-guide-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--primary);
+}
+
+.setup-guide-grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 480px) {
+  .setup-guide-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.setup-guide-block .steps {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.setup-guide-block .steps li {
+  margin-bottom: 6px;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+  padding: 0;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+}
+
 .connect-hint {
   margin-top: 8px;
   font-size: 0.75rem;

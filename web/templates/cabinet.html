@@ -16,11 +16,16 @@
       <h1>{{ brand_name }}</h1>
     </div>
   </div>
-  {% if device_count > 0 %}
-  <span class="badge badge-ok">{{ device_count }} устр.</span>
-  {% else %}
-  <span class="badge badge-off">нет устройств</span>
-  {% endif %}
+  <div style="display:flex;align-items:center;gap:8px">
+    {% if via_session %}
+    <a class="btn btn-secondary btn-sm" href="/cabinet/profile">Профиль</a>
+    {% endif %}
+    {% if device_count > 0 %}
+    <span class="badge badge-ok">{{ device_count }} устр.</span>
+    {% else %}
+    <span class="badge badge-off">нет устройств</span>
+    {% endif %}
+  </div>
 </header>
 {% endblock %}
 
@@ -29,6 +34,20 @@
 <div class="alert alert-success">Оплата принята. Баланс обновится автоматически в течение минуты.</div>
 {% elif request.query_params.get('paid') == 'fail' %}
 <div class="alert alert-error">Оплата не прошла. Попробуйте ещё раз.</div>
+{% endif %}
+{% if request.query_params.get('verify') == 'sent' %}
+<div class="alert alert-success">Письмо с подтверждением отправлено на {{ user.email }}.</div>
+{% endif %}
+{% if request.query_params.get('verified') == '1' %}
+<div class="alert alert-success">Email подтверждён. Спасибо!</div>
+{% endif %}
+{% if user.email and not user.email_verified %}
+<div class="alert alert-error">
+  Подтвердите email — проверьте почту или
+  <form method="post" action="/auth/resend-verification" style="display:inline">
+    <button type="submit" class="link-btn">отправить повторно</button>
+  </form>
+</div>
 {% endif %}
 {% if request.query_params.get('err') %}
 <div class="alert alert-error">{{ request.query_params.get('err') }}</div>
@@ -61,16 +80,38 @@
         </span>
       </div>
       <p class="greeting" style="margin-top:16px">
-        Привет, <strong>{{ user.first_name or "пользователь" }}</strong>{% if user.username %} · @{{ user.username }}{% endif %}
+        Привет, <strong>{{ display_name }}</strong>{% if user.username %} · @{{ user.username }}{% endif %}
       </p>
     </div>
     <div class="balance-card-footer">
-      <a class="btn btn-block" href="/cabinet/{{ user.cabinet_token }}/pay">
+      <a class="btn btn-block" href="{{ cabinet_base }}/pay">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
         Пополнить баланс
       </a>
     </div>
   </div>
+
+  <section class="setup-guide card" id="setup-guide">
+    <h2 class="setup-guide-title">📖 Как подключиться</h2>
+    <div class="setup-guide-grid">
+      <div class="setup-guide-block">
+        <p class="setup-block-title"><strong>Android</strong></p>
+        <ol class="steps">
+          <li>Добавьте устройство ниже</li>
+          <li>Скопируйте <strong>ключ</strong></li>
+          <li><a href="{{ amnezia_android }}" target="_blank" rel="noopener">Amnezia</a>: ➕ → «Вставить ключ»</li>
+        </ol>
+      </div>
+      <div class="setup-guide-block">
+        <p class="setup-block-title"><strong>iPhone / Mac</strong></p>
+        <ol class="steps">
+          <li>Добавьте устройство ниже</li>
+          <li>Скачайте <strong>.conf</strong></li>
+          <li><a href="{{ amnezia_wg_apple }}" target="_blank" rel="noopener">AmneziaWG</a>: «Из файла или архива»</li>
+        </ol>
+      </div>
+    </div>
+  </section>
 
   <div class="status-pill">
     <div class="pulse-wrap">
@@ -102,7 +143,7 @@
           <p class="device-name">{{ d.name or platform_label(d.platform) }}</p>
           <p class="device-status">{{ platform_label(d.platform) }}</p>
         </div>
-        <form method="post" action="/cabinet/{{ user.cabinet_token }}/devices/{{ d.id }}/remove"
+        <form method="post" action="{{ cabinet_base }}/devices/{{ d.id }}/remove"
               onsubmit="return confirm('Удалить устройство «{{ d.name }}»? Ключ перестанет работать.');">
           <button class="btn-icon" type="submit" title="Удалить">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -136,10 +177,10 @@
               </svg>
             </span>
           </button>
-          <p class="connect-hint">Приложение Amnezia (Android): ➕ → «Вставить ключ»</p>
+          <p class="connect-hint">Amnezia (Android): ➕ → «Вставить ключ» → Подключить</p>
         </div>
         <div class="connect-panel connect-panel-conf{% if not use_conf %} hidden{% endif %}" data-device="{{ d.id }}" data-mode="conf">
-          <a class="conf-download-btn" href="/cabinet/{{ user.cabinet_token }}/devices/{{ d.id }}/conf">
+          <a class="conf-download-btn" href="{{ cabinet_base }}/devices/{{ d.id }}/conf">
             <div style="flex:1;min-width:0">
               <p class="key-copy-label">Conf-файл AmneziaWG</p>
               <p class="key-copy-preview">Скачать .conf для импорта в приложение</p>
@@ -160,7 +201,7 @@
     {% endif %}
 
     {% if device_count < max_devices %}
-    <form method="post" action="/cabinet/{{ user.cabinet_token }}/devices/add" class="add-device" style="margin-top:12px">
+    <form method="post" action="{{ cabinet_base }}/devices/add" class="add-device" style="margin-top:12px">
       <p class="muted">Добавить устройство (+{{ "%.0f"|format(daily_price) }} ₽/сутки):</p>
       <div class="platform-grid">
         <button class="btn btn-secondary" name="platform" value="android" type="submit">📱 Android</button>
@@ -174,24 +215,22 @@
     {% endif %}
   </section>
 
-  <details class="panel">
-    <summary>
-      Инструкция по подключению
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-    </summary>
-    <div class="panel-body">
-      <p class="setup-block-title"><strong>Android</strong> — <a href="{{ amnezia_android }}" target="_blank" rel="noopener">приложение Amnezia</a></p>
-      <ol class="steps">
-        <li>Добавьте устройство → вкладка <strong>Ключ</strong> → скопируйте</li>
-        <li>В приложении: ➕ → «Вставить ключ» → Подключить</li>
-      </ol>
-      <p class="setup-block-title" style="margin-top:16px"><strong>iPhone / Mac</strong> — <a href="{{ amnezia_wg_apple }}" target="_blank" rel="noopener">AmneziaWG</a></p>
-      <ol class="steps">
-        <li>Добавьте устройство → вкладка <strong>Conf-файл</strong> → скачайте .conf</li>
-        <li>В приложении: «Добавить туннель» → «Добавить туннель из файла или архива» → выберите conf</li>
-      </ol>
-    </div>
-  </details>
+  <div class="card">
+    <h2>Рефералы</h2>
+    <div class="row"><span>Приглашено</span><strong>{{ referrals }} чел.</strong></div>
+    <div class="row"><span>Бонус за друга</span><strong>{{ referral_bonus }} ₽</strong></div>
+    <p class="muted" style="margin-top:12px">Ваша реферальная ссылка:</p>
+    <button type="button" class="key-copy-btn copy-btn" data-target="refLink" style="margin-top:8px">
+      <div style="flex:1;min-width:0;text-align:left">
+        <p class="key-copy-label">Ссылка для друзей</p>
+        <p class="key-copy-preview" id="refPreview">{{ referral_web_link[:48] }}…</p>
+      </div>
+    </button>
+    <textarea class="key-box-hidden" id="refLink" readonly aria-hidden="true">{{ referral_web_link }}</textarea>
+    {% if referral_tg_link %}
+    <p class="muted" style="margin-top:12px;font-size:13px">Или через Telegram: <a href="{{ referral_tg_link }}" target="_blank" rel="noopener">пригласить в боте</a></p>
+    {% endif %}
+  </div>
 
   <a class="panel panel-link" href="/about">
     <span>О сервисе</span>
@@ -205,14 +244,11 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
   </a>
 
-  <div class="card">
-    <h2>Рефералы</h2>
-    <div class="row"><span>Приглашено</span><strong>{{ referrals }} чел.</strong></div>
-    <div class="row"><span>Бонус за друга</span><strong>{{ referral_bonus }} ₽</strong></div>
-    <p class="muted" style="margin-top:12px">Реферальная ссылка — в Telegram-боте, кнопка «Пригласить».</p>
-  </div>
-
-  <p class="footer-note">Сохраните страницу в закладки — доступ без Telegram</p>
+  {% if via_session %}
+  <p class="footer-note">Вы вошли по email · <a href="/auth/logout">Выйти</a></p>
+  {% else %}
+  <p class="footer-note">Сохраните страницу в закладки · <a href="/auth/login">Войти по email</a></p>
+  {% endif %}
 </main>
 {% endblock %}
 
@@ -256,7 +292,7 @@ async function copyKey(id, btn) {
     }
   } catch (e) { /* ignore */ }
 
-  alert('Выделите ключ и нажмите Ctrl+C (или долгое нажатие → Копировать)');
+  alert('Выделите текст и нажмите Ctrl+C');
 }
 
 document.querySelectorAll('.copy-btn').forEach((btn) => {

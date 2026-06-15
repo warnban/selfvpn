@@ -1,0 +1,27 @@
+{% extends "auth_base.html" %}
+{% set title = "Вход" %}
+
+{% block auth_form %}
+<form method="post" action="/auth/login" class="card stack" style="gap:16px">
+  <input type="hidden" name="next" value="{{ next }}">
+  <div>
+    <label for="email">Email</label>
+    <input type="email" name="email" id="email" required autofocus placeholder="you@example.com">
+  </div>
+  <div>
+    <label for="password">Пароль</label>
+    <input type="password" name="password" id="password" required placeholder="••••••••">
+  </div>
+  <button class="btn btn-block" type="submit">Войти</button>
+</form>
+{% endblock %}
+
+{% block auth_footer %}
+<p class="muted" style="text-align:center;margin-top:16px">
+  Нет аккаунта? <a href="/auth/register">Зарегистрироваться</a><br>
+  <a href="/auth/forgot">Забыли пароль?</a>
+</p>
+<p class="muted" style="text-align:center;margin-top:12px;font-size:13px">
+  Или подключитесь через <a href="https://t.me/anfikvpnbot" target="_blank" rel="noopener">Telegram-бот</a>
+</p>
+{% endblock %}

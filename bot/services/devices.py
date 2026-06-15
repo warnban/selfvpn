@@ -79,7 +79,10 @@ async def add_device(
         )
 
     label = name or platform_label(platform).split(" ", 1)[-1]
-    panel_name = f"tg{user.telegram_id}_{secrets.token_hex(3)}"
+    if user.telegram_id:
+        panel_name = f"tg{user.telegram_id}_{secrets.token_hex(3)}"
+    else:
+        panel_name = f"web{user.id}_{secrets.token_hex(3)}"
 
     try:
         result = await panel_client.create_client(panel_name)

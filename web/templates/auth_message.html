@@ -1,0 +1,9 @@
+{% extends "auth_base.html" %}
+{% set title = title %}
+
+{% block auth_form %}
+<div class="card" style="text-align:center">
+  <p style="margin-bottom:16px">{{ message }}</p>
+  <a class="btn" href="/auth/login">Войти</a>
+</div>
+{% endblock %}

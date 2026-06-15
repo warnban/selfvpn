@@ -12,7 +12,7 @@
       <p>{{ daily_price }} ₽/сутки</p>
     </div>
   </div>
-  <a class="link" href="/cabinet/{{ user.cabinet_token }}">← Кабинет</a>
+  <a class="link" href="{{ cabinet_base | default('/cabinet/' ~ user.cabinet_token) }}">← Кабинет</a>
 </div>
 {% endblock %}
 
