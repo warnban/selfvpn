@@ -180,8 +180,6 @@ async def _migrate_sqlite(conn) -> None:
                     )
 
     await conn.run_sync(run_migrations)
-    await conn.execute(text("PRAGMA journal_mode=WAL"))
-    await conn.execute(text("PRAGMA busy_timeout=15000"))
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
