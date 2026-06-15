@@ -6,8 +6,12 @@ import zlib
 from bot.config import settings
 
 
-def server_display_name() -> str:
-    return (settings.brand_name or "VPN").strip()
+def resolve_panel_server_id(server_id: int | None) -> int:
+    return settings.panel_server_id if server_id is None else server_id
+
+
+def server_display_name(server_id: int | None = None) -> str:
+    return settings.vpn_server_display_name(resolve_panel_server_id(server_id))
 
 
 def decode_vpn_link(vpn_link: str) -> dict | None:
@@ -53,8 +57,13 @@ def _patch_display_name(node: object, name: str) -> None:
             _patch_display_name(item, name)
 
 
-def apply_server_display_name(vpn_link: str, display_name: str | None = None) -> str:
-    name = (display_name or server_display_name()).strip()
+def apply_server_display_name(
+    vpn_link: str,
+    display_name: str | None = None,
+    *,
+    server_id: int | None = None,
+) -> str:
+    name = (display_name or server_display_name(server_id)).strip()
     if not name or not vpn_link:
         return vpn_link
 
@@ -66,16 +75,17 @@ def apply_server_display_name(vpn_link: str, display_name: str | None = None) ->
     return encode_vpn_link(config)
 
 
-def public_vpn_link(vpn_link: str | None) -> str:
+def public_vpn_link(vpn_link: str | None, server_id: int | None = None) -> str:
     if not vpn_link:
         return ""
-    return apply_server_display_name(vpn_link)
+    return apply_server_display_name(vpn_link, server_id=server_id)
 
 
-def config_from_vpn_link(vpn_link: str) -> str:
+def config_from_vpn_link(vpn_link: str, server_id: int | None = None) -> str:
     if not vpn_link or not vpn_link.startswith("vpn://"):
         return ""
-    config = decode_vpn_link(vpn_link)
+    branded = public_vpn_link(vpn_link, server_id)
+    config = decode_vpn_link(branded)
     if not config:
         try:
             return base64.b64decode(vpn_link[6:], validate=True).decode("utf-8").strip()
@@ -104,19 +114,24 @@ def extract_vpn_link(result: dict) -> str:
     return link or ""
 
 
-def prepare_panel_vpn(result: dict) -> tuple[str, str]:
+def prepare_panel_vpn(result: dict, *, server_id: int | None = None) -> tuple[str, str]:
     """Из ответа панели — ключ и conf с брендовым именем сервера."""
-    vpn_link = public_vpn_link(extract_vpn_link(result))
+    sid = resolve_panel_server_id(server_id)
+    vpn_link = public_vpn_link(extract_vpn_link(result), sid)
     vpn_config = config_from_panel_result(result)
     if not vpn_config and vpn_link:
-        vpn_config = config_from_vpn_link(vpn_link)
+        vpn_config = config_from_vpn_link(vpn_link, sid)
     return vpn_link, vpn_config
 
 
-def device_config_text(vpn_config: str | None, vpn_link: str | None) -> str:
+def device_config_text(
+    vpn_config: str | None,
+    vpn_link: str | None,
+    server_id: int | None = None,
+) -> str:
     if vpn_config:
         return vpn_config.strip()
-    return config_from_vpn_link(public_vpn_link(vpn_link))
+    return config_from_vpn_link(public_vpn_link(vpn_link, server_id), server_id)
 
 
 def safe_conf_filename(name: str, device_id: int) -> str:

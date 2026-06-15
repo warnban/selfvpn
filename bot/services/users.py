@@ -203,7 +203,7 @@ async def reject_payment(session: AsyncSession, payment: Payment, comment: str |
 
 async def provision_vpn(session: AsyncSession, user: User) -> str:
     if user.vpn_client_id and user.vpn_active and user.vpn_link:
-        return public_vpn_link(user.vpn_link)
+        return public_vpn_link(user.vpn_link, settings.panel_server_id)
 
     if user.balance_rub < settings.daily_price_rub:
         raise ValueError("Недостаточно средств на балансе")
@@ -218,7 +218,7 @@ async def provision_vpn(session: AsyncSession, user: User) -> str:
     user.vpn_client_id = result.get("client_id") or result.get("clientId")
     user.vpn_active = True
 
-    vpn_link, _ = prepare_panel_vpn(result)
+    vpn_link, _ = prepare_panel_vpn(result, server_id=settings.panel_server_id)
     if not vpn_link:
         logger.error("Panel response without vpn link: %s", list(result.keys()))
         raise ValueError(f"Сервер не вернул ключ подключения. Ответ: {str(result)[:200]}")

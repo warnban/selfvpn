@@ -164,11 +164,11 @@
                   data-mode="conf" data-device="{{ d.id }}">📄 Conf-файл</button>
         </div>
         <div class="connect-panel connect-panel-key{% if use_conf %} hidden{% endif %}" data-device="{{ d.id }}" data-mode="key">
-          <textarea class="key-box-hidden" id="key{{ d.id }}" readonly aria-hidden="true">{{ d.vpn_link | branded_vpn_link }}</textarea>
+          <textarea class="key-box-hidden" id="key{{ d.id }}" readonly aria-hidden="true">{{ d.vpn_link | branded_vpn_link(d.panel_server_id) }}</textarea>
           <button type="button" class="key-copy-btn copy-btn" data-target="key{{ d.id }}">
             <div style="flex:1;min-width:0">
               <p class="key-copy-label">Ключ подключения</p>
-              <p class="key-copy-preview">{{ (d.vpn_link | branded_vpn_link)[:42] }}{% if d.vpn_link and (d.vpn_link | branded_vpn_link)|length > 42 %}…{% endif %}</p>
+              <p class="key-copy-preview">{{ (d.vpn_link | branded_vpn_link(d.panel_server_id))[:42] }}{% if d.vpn_link and (d.vpn_link | branded_vpn_link(d.panel_server_id))|length > 42 %}…{% endif %}</p>
             </div>
             <span class="key-copy-icon">
               <svg class="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

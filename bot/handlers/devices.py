@@ -19,10 +19,11 @@ from bot.services.devices import (
     get_device_config,
     list_devices,
     platform_label,
+    public_vpn_link_for_device,
     remove_device,
     user_daily_cost,
 )
-from bot.services.vpn_config import public_vpn_link, safe_conf_filename
+from bot.services.vpn_config import safe_conf_filename
 from bot.services.users import get_user_by_telegram_id
 
 router = Router()
@@ -159,7 +160,7 @@ async def cb_device_key(callback: CallbackQuery, session: AsyncSession) -> None:
         return
 
     await callback.message.answer(
-        vpn_key_instructions(public_vpn_link(device.vpn_link), device.name),
+        vpn_key_instructions(public_vpn_link_for_device(device), device.name),
         reply_markup=app_download_kb(),
         parse_mode="HTML",
     )

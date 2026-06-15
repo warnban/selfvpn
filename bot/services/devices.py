@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.config import settings
 from bot.database.models import Device, User
 from bot.services.panel import panel_client
-from bot.services.vpn_config import prepare_panel_vpn, device_config_text, public_vpn_link
+from bot.services.vpn_config import prepare_panel_vpn, device_config_text, public_vpn_link, public_vpn_link_for_device
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,11 @@ async def days_left_for(session: AsyncSession, user: User) -> int:
 
 
 def get_device_config(device: Device) -> str:
-    return device_config_text(device.vpn_config, device.vpn_link)
+    return device_config_text(device.vpn_config, device.vpn_link, device.panel_server_id)
+
+
+def public_vpn_link_for_device(device: Device) -> str:
+    return public_vpn_link(device.vpn_link, device.panel_server_id)
 
 async def add_device(
     session: AsyncSession,
@@ -89,7 +93,7 @@ async def add_device(
         logger.exception("Panel create_client failed for %s", panel_name)
         raise
 
-    vpn_link, vpn_config = prepare_panel_vpn(result)
+    vpn_link, vpn_config = prepare_panel_vpn(result, server_id=settings.panel_server_id)
     if not vpn_link:
         raise ValueError(f"Сервер не вернул ключ подключения. Ответ: {str(result)[:200]}")
 
@@ -100,6 +104,7 @@ async def add_device(
         vpn_client_id=result.get("client_id") or result.get("clientId"),
         vpn_link=vpn_link,
         vpn_config=vpn_config or None,
+        panel_server_id=settings.panel_server_id,
     )
     session.add(device)
     await session.commit()

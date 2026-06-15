@@ -19,6 +19,7 @@ from bot.services.devices import (
     get_device_config,
     list_devices,
     platform_label,
+    public_vpn_link_for_device,
     remove_device,
     user_daily_cost,
 )
@@ -169,9 +170,9 @@ async def device_vpn(
     if not device:
         raise HTTPException(status_code=404, detail="Устройство не найдено")
     config = get_device_config(device)
-    link = public_vpn_link(device.vpn_link)
+    link = public_vpn_link_for_device(device)
     if not link and config:
-        link = public_vpn_link(extract_vpn_link({"config": config}))
+        link = public_vpn_link(extract_vpn_link({"config": config}), device.panel_server_id)
     if not link and not config:
         raise HTTPException(status_code=404, detail="VPN-ключ недоступен")
     return VpnConfigResponse(

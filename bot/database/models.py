@@ -60,6 +60,7 @@ class Device(Base):
     vpn_client_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     vpn_link: Mapped[str | None] = mapped_column(Text, nullable=True)
     vpn_config: Mapped[str | None] = mapped_column(Text, nullable=True)
+    panel_server_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     user: Mapped["User"] = relationship(back_populates="devices")

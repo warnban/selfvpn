@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     panel_api_token: str = ""
     panel_server_id: int = 0
     panel_protocol: str = "awg2"
+    # Код страны для дефолтного сервера: "Бренд NL". Для нескольких: PANEL_SERVER_LABELS=0:NL,1:DE
+    panel_server_country: str = ""
+    panel_server_labels: str = ""
 
     payment_card: str = "0000 0000 0000 0000"
     payment_bank: str = "Банк"
@@ -122,6 +125,29 @@ class Settings(BaseSettings):
 
     def cabinet_session_url(self) -> str:
         return f"{self.web_base_url.rstrip('/')}/cabinet"
+
+    def panel_server_label_map(self) -> dict[int, str]:
+        labels: dict[int, str] = {}
+        raw = self.panel_server_labels.strip()
+        if raw:
+            for part in raw.split(","):
+                part = part.strip()
+                if ":" not in part:
+                    continue
+                sid, code = part.split(":", 1)
+                sid = sid.strip()
+                code = code.strip().upper()
+                if sid.isdigit() and code:
+                    labels[int(sid)] = code
+        elif self.panel_server_country.strip():
+            labels[self.panel_server_id] = self.panel_server_country.strip().upper()
+        return labels
+
+    def vpn_server_display_name(self, server_id: int | None = None) -> str:
+        brand = (self.brand_name or "VPN").strip()
+        sid = self.panel_server_id if server_id is None else server_id
+        code = self.panel_server_label_map().get(sid, "")
+        return f"{brand} {code}" if code else brand
 
 
 settings = Settings()

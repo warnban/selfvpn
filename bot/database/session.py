@@ -147,6 +147,8 @@ async def _migrate_sqlite(conn) -> None:
             dcols = {c["name"] for c in inspector.get_columns("devices")}
             if "vpn_config" not in dcols:
                 sync_conn.execute(text("ALTER TABLE devices ADD COLUMN vpn_config TEXT"))
+            if "panel_server_id" not in dcols:
+                sync_conn.execute(text("ALTER TABLE devices ADD COLUMN panel_server_id INTEGER"))
 
         if "devices" in inspector.get_table_names() and "users" in inspector.get_table_names():
             ucols = {c["name"] for c in inspector.get_columns("users")}
