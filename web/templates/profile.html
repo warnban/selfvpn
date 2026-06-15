@@ -30,6 +30,9 @@
   {% if message == 'password_changed' %}
   <div class="alert alert-success">Пароль обновлён</div>
   {% endif %}
+  {% if request.query_params.get('verify') == 'sent' %}
+  <div class="alert alert-success">Письмо с подтверждением отправлено на {{ user.email }}.</div>
+  {% endif %}
 
   <div class="card">
     <h2>Аккаунт</h2>
@@ -41,6 +44,8 @@
     </div>
     {% if not user.email_verified %}
     <form method="post" action="/auth/resend-verification" style="margin-top:12px">
+      <input type="hidden" name="cabinet_token" value="{{ user.cabinet_token }}">
+      <input type="hidden" name="next_url" value="/cabinet/profile">
       <button class="btn btn-secondary btn-block" type="submit">Отправить письмо повторно</button>
     </form>
     {% endif %}

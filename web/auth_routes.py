@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,9 +9,10 @@ from bot.services.auth import (
     register_web_user,
     request_password_reset,
     reset_password,
-    send_user_verification_email,
     verify_user_email,
 )
+from bot.services.email import send_verification_for_user_id
+from bot.services.users import get_user_by_cabinet_token
 from web.cabinet_helpers import login_session, logout_session
 from web.deps import get_db, templates
 
@@ -79,6 +80,7 @@ async def auth_register_form(request: Request):
 @router.post("/auth/register")
 async def auth_register_submit(
     request: Request,
+    background_tasks: BackgroundTasks,
     email: str = Form(...),
     password: str = Form(...),
     display_name: str = Form(""),
@@ -118,10 +120,7 @@ async def auth_register_submit(
             qs += f"&ref={ref_id}"
         return RedirectResponse(f"/auth/register?{qs}", status_code=303)
 
-    try:
-        await send_user_verification_email(user)
-    except Exception:
-        logger.exception("Verification email failed for user %s", user.id)
+    background_tasks.add_task(send_verification_for_user_id, user.id)
 
     login_session(request, user)
     return RedirectResponse("/cabinet?verify=sent", status_code=303)
@@ -202,18 +201,33 @@ async def auth_verify(
     return RedirectResponse("/cabinet?verified=1", status_code=303)
 
 
+def _safe_cabinet_redirect(next_url: str | None, fallback: str = "/cabinet") -> str:
+    if next_url and next_url.startswith("/cabinet") and not next_url.startswith("//"):
+        return next_url.split("?")[0]
+    return fallback
+
+
 @router.post("/auth/resend-verification")
 async def auth_resend_verification(
     request: Request,
+    background_tasks: BackgroundTasks,
+    cabinet_token: str = Form(""),
+    next_url: str = Form("/cabinet"),
     session: AsyncSession = Depends(get_db),
 ):
     from web.cabinet_helpers import get_user_from_session
 
     user = await get_user_from_session(request, session)
+    if not user and cabinet_token:
+        user = await get_user_by_cabinet_token(session, cabinet_token)
     if not user or not user.email or user.email_verified:
-        return RedirectResponse("/cabinet", status_code=303)
-    await send_user_verification_email(user)
-    return RedirectResponse("/cabinet?verify=sent", status_code=303)
+        target = _safe_cabinet_redirect(next_url)
+        return RedirectResponse(target, status_code=303)
+
+    login_session(request, user)
+    background_tasks.add_task(send_verification_for_user_id, user.id)
+    target = _safe_cabinet_redirect(next_url)
+    return RedirectResponse(f"{target}?verify=sent", status_code=303)
 
 
 @router.get("/cabinet/profile", response_class=HTMLResponse)

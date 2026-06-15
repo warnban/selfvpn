@@ -45,6 +45,8 @@
 <div class="alert alert-error">
   Подтвердите email — проверьте почту или
   <form method="post" action="/auth/resend-verification" style="display:inline">
+    <input type="hidden" name="cabinet_token" value="{{ user.cabinet_token }}">
+    <input type="hidden" name="next_url" value="{{ cabinet_base }}">
     <button type="submit" class="link-btn">отправить повторно</button>
   </form>
 </div>

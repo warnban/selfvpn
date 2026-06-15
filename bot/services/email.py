@@ -95,3 +95,19 @@ async def send_password_reset_email(to: str, reset_url: str) -> bool:
 async def send_notification_email(to: str, subject: str, message: str) -> bool:
     body = f'<p style="color:#ccc;white-space:pre-line">{message}</p>'
     return await send_email(to, f"{subject} — {settings.brand_name}", _email_shell(subject, body))
+
+
+async def send_verification_for_user_id(user_id: int) -> None:
+    """Фоновая отправка — не блокирует HTTP-ответ."""
+    from bot.database.session import async_session
+    from bot.services.auth import send_user_verification_email
+    from bot.services.users import get_user_by_id
+
+    try:
+        async with async_session() as session:
+            user = await get_user_by_id(session, user_id)
+            if user and user.email and not user.email_verified:
+                await send_user_verification_email(user)
+    except Exception:
+        logger.exception("Фоновая отправка verification email не удалась для user_id=%s", user_id)
+
