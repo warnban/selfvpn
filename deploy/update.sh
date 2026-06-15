@@ -32,8 +32,12 @@ systemctl daemon-reload
 systemctl enable selfvpn-web 2>/dev/null || bash deploy/fix-502.sh
 systemctl restart selfvpn-web
 
-sleep 2
-CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/health || echo "000")
+CODE="000"
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  sleep 2
+  CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/health || echo "000")
+  [ "$CODE" = "200" ] && break
+done
 echo "web /health → HTTP $CODE"
 [ "$CODE" = "200" ] || bash deploy/fix-502.sh
 

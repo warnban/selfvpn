@@ -52,12 +52,16 @@ fi
 systemctl daemon-reload
 systemctl enable selfvpn-web
 systemctl restart selfvpn-web
-sleep 2
-systemctl status selfvpn-web --no-pager || true
 
 echo ""
 echo "=== 5. Проверка ==="
-CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/health 2>/dev/null || echo "000")
+CODE="000"
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  sleep 2
+  CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/health 2>/dev/null || echo "000")
+  echo "  попытка $i: HTTP $CODE"
+  [ "$CODE" = "200" ] && break
+done
 echo "/health → HTTP $CODE"
 
 if [ "$CODE" != "200" ]; then

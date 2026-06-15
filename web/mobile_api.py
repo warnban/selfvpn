@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 
 from fastapi import APIRouter, Depends, Header, HTTPException
-from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -148,16 +147,16 @@ async def create_device(
     )
 
 
-@router.delete("/devices/{device_id}", status_code=204, response_class=Response)
+@router.delete("/devices/{device_id}")
 async def delete_device(
     device_id: int,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
-) -> Response:
+) -> dict[str, bool]:
     removed = await remove_device(session, user, device_id)
     if not removed:
         raise HTTPException(status_code=404, detail="Устройство не найдено")
-    return Response(status_code=204)
+    return {"ok": True}
 
 
 @router.get("/devices/{device_id}/vpn", response_model=VpnConfigResponse)
