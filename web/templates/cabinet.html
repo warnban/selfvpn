@@ -12,7 +12,7 @@
       </svg>
     </div>
     <div>
-      <p class="brand-label">VPN от</p>
+      <p class="brand-label">Сервис</p>
       <h1>{{ brand_name }}</h1>
     </div>
   </div>
@@ -136,7 +136,7 @@
               </svg>
             </span>
           </button>
-          <p class="connect-hint">Amnezia VPN (Android): ➕ → «Вставить ключ»</p>
+          <p class="connect-hint">Приложение Amnezia (Android): ➕ → «Вставить ключ»</p>
         </div>
         <div class="connect-panel connect-panel-conf{% if not use_conf %} hidden{% endif %}" data-device="{{ d.id }}" data-mode="conf">
           <a class="conf-download-btn" href="/cabinet/{{ user.cabinet_token }}/devices/{{ d.id }}/conf">
@@ -180,7 +180,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
     </summary>
     <div class="panel-body">
-      <p class="setup-block-title"><strong>Android</strong> — <a href="{{ amnezia_android }}" target="_blank" rel="noopener">Amnezia VPN</a></p>
+      <p class="setup-block-title"><strong>Android</strong> — <a href="{{ amnezia_android }}" target="_blank" rel="noopener">приложение Amnezia</a></p>
       <ol class="steps">
         <li>Добавьте устройство → вкладка <strong>Ключ</strong> → скопируйте</li>
         <li>В приложении: ➕ → «Вставить ключ» → Подключить</li>
@@ -192,6 +192,12 @@
       </ol>
     </div>
   </details>
+
+  <a class="panel panel-link" href="/about">
+    <span>О сервисе</span>
+    <span class="panel-link-meta">Условия · Контакты</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+  </a>
 
   <a class="panel panel-link" href="{{ support_tg_url }}" target="_blank" rel="noopener">
     <span>Написать в поддержку</span>

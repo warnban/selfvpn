@@ -2,7 +2,7 @@
 
 AMNEZIA_ANDROID = "https://play.google.com/store/apps/details?id=org.amnezia.vpn"
 AMNEZIA_WG_APPLE = "https://apps.apple.com/app/amneziawg/id6478942365"
-# Старый алиас — Amnezia VPN на iOS (не используем в инструкциях)
+# Старый алиас — ссылка на iOS (в инструкциях используем AmneziaWG)
 AMNEZIA_IOS = AMNEZIA_WG_APPLE
 AMNEZIA_SITE = "https://amnezia.org"
 
@@ -28,7 +28,7 @@ def new_user_welcome(
         "\n<b>Как подключить:</b>\n"
         "1. Открой кабинет → добавь устройство\n"
         "2. Скачай приложение:\n"
-        f'   • Android — <a href="{AMNEZIA_ANDROID}">Amnezia VPN</a>\n'
+        f'   • Android — <a href="{AMNEZIA_ANDROID}">приложение Amnezia</a>\n'
         f'   • iPhone / Mac — <a href="{AMNEZIA_WG_APPLE}">AmneziaWG</a>\n'
         "3. В кабинете:\n"
         "   • Android — вкладка <b>Ключ</b> → скопируй\n"
@@ -43,8 +43,8 @@ def new_user_welcome(
 
 def amnezia_setup_steps() -> str:
     return (
-        "<b>Как подключить VPN</b>\n\n"
-        "<b>Android</b> — <a href=\"{android}\">Amnezia VPN</a>\n"
+        "<b>Как подключить</b>\n\n"
+        "<b>Android</b> — <a href=\"{android}\">приложение Amnezia</a>\n"
         "Кабинет → устройство → <b>Ключ</b> → ➕ → «Вставить ключ»\n\n"
         "<b>iPhone / Mac</b> — <a href=\"{apple}\">AmneziaWG</a>\n"
         "Кабинет → устройство → <b>Conf</b> → скачай файл → "
@@ -56,7 +56,7 @@ def device_connect_choice(device_name: str = "") -> str:
     title = f"✅ <b>«{device_name}» готово</b>" if device_name else "✅ <b>Устройство готово</b>"
     return (
         f"{title}\n\n"
-        "Android — нажми <b>Ключ</b> (Amnezia VPN)\n"
+        "Android — нажми <b>Ключ</b> (приложение Amnezia)\n"
         "iPhone / Mac — нажми <b>Conf</b> (AmneziaWG)"
     )
 
@@ -66,9 +66,9 @@ def vpn_key_instructions(vpn_link: str, device_name: str = "") -> str:
     return (
         f"{title}\n\n"
         f"<code>{vpn_link}</code>\n\n"
-        "<b>Amnezia VPN (Android):</b>\n"
+        "<b>Приложение Amnezia (Android):</b>\n"
         "➕ → «Вставить ключ» → вставь ключ → Подключить\n\n"
-        f'<a href="{AMNEZIA_ANDROID}">Скачать Amnezia VPN</a>'
+        f'<a href="{AMNEZIA_ANDROID}">Скачать Amnezia</a>'
     )
 
 

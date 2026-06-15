@@ -18,6 +18,8 @@ LEGACY_MENU_BUTTONS = frozenset({
     "💳 Пополнить",
     "👥 Рефералы",
     "ℹ️ Помощь",
+    "🔐 Подключить",
+    "Подключить",
     "🔐 Подключить VPN",
     "Подключить VPN",
 })
@@ -61,7 +63,7 @@ def invite_kb(ref_link: str) -> InlineKeyboardMarkup:
     share_url = (
         "https://t.me/share/url?"
         f"url={quote(ref_link, safe='')}"
-        f"&text={quote('Быстрый VPN — попробуй', safe='')}"
+        f"&text={quote('Стабильный интернет — попробуй', safe='')}"
     )
     return InlineKeyboardMarkup(
         inline_keyboard=[

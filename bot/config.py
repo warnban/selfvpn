@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     web_secret_key: str = "change-me-in-production"
     admin_web_password: str = "admin"
     uploads_dir: str = "./data/uploads"
-    brand_name: str = "VPN от дяди Сани"
+    brand_name: str = "Интернет от дяди Сани"
     support_tg: str = "aleblanche"
 
     freekassa_merchant_id: int = 0

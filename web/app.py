@@ -46,8 +46,10 @@ from bot.services.freekassa import (
 )
 from bot.messages import AMNEZIA_ANDROID, AMNEZIA_WG_APPLE
 from bot.services.vpn_config import safe_conf_filename
+from web.mobile_api import router as mobile_router
 
 app = FastAPI(title="SelfVPN Cabinet")
+app.include_router(mobile_router)
 app.add_middleware(SessionMiddleware, secret_key=settings.web_secret_key)
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
@@ -58,6 +60,8 @@ templates.env.globals["amnezia_android"] = AMNEZIA_ANDROID
 templates.env.globals["amnezia_wg_apple"] = AMNEZIA_WG_APPLE
 templates.env.globals["platform_label"] = platform_label
 templates.env.globals["max_devices"] = settings.max_devices
+templates.env.globals["support_phone_tel"] = "89169046701"
+templates.env.globals["support_phone_display"] = "+7 (916) 904-67-01"
 
 static_path = Path(__file__).parent / "static"
 (static_path / "css").mkdir(parents=True, exist_ok=True)
@@ -115,9 +119,24 @@ async def sitemap_xml() -> Response:
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n"
         f"  <url><loc>{base}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n"
+        f"  <url><loc>{base}/about</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>\n"
         "</urlset>\n"
     )
     return Response(content=xml, media_type="application/xml")
+
+
+@app.get("/about", response_class=HTMLResponse)
+async def about(request: Request) -> HTMLResponse:
+    referer = request.headers.get("referer") or ""
+    back_url = ""
+    if referer and "/about" not in referer.rstrip("/").split("?")[0]:
+        if any(part in referer for part in ("/cabinet/", "/pay", "/payment/", "/admin")):
+            back_url = referer
+    return templates.TemplateResponse(
+        request,
+        "about.html",
+        {"back_url": back_url},
+    )
 
 
 @app.get("/cabinet/{token}", response_class=HTMLResponse)

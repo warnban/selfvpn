@@ -12,7 +12,7 @@
       </svg>
     </div>
     <div>
-      <h1>VPN Admin</h1>
+      <h1>Панель управления</h1>
       <p>{{ brand_name }} · Панель управления</p>
     </div>
   </div>
@@ -57,7 +57,7 @@
     </div>
     <div>
       <div class="admin-stat-value">{{ users|length }}</div>
-      <div class="admin-stat-sub">{{ active_users.count }} с активным VPN</div>
+      <div class="admin-stat-sub">{{ active_users.count }} с активным подключением</div>
     </div>
   </div>
 
@@ -128,7 +128,7 @@
   <h2>Telegram Stars</h2>
   <p class="muted" style="margin-bottom:16px">
     Тариф в рублях задаётся в <code>.env</code> (<code>DAILY_PRICE_RUB</code>).
-    Здесь — сколько Stars платит пользователь за 1 день VPN в боте.
+    Здесь — сколько Stars платит пользователь за 1 день сервиса в боте.
   </p>
   <form method="post" action="/admin/settings/stars" class="credit-form" style="max-width:420px">
     <label for="stars_per_day">Stars за 1 день</label>

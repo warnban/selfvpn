@@ -5,3 +5,9 @@ __pycache__/
 *.pyc
 *.db
 landing/node_modules/
+android/amnezia-client/
+android/daddyvpn-app/.gradle/
+android/daddyvpn-app/build/
+android/daddyvpn-app/app/build/
+android/daddyvpn-app/local.properties
+android/daddyvpn-app/.idea/

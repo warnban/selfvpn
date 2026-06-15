@@ -80,9 +80,10 @@ async def cmd_terms(message: Message) -> None:
     await message.answer(
         f"📄 <b>Условия использования {settings.brand_name}</b>\n\n"
         f"• Тариф: {settings.daily_price_rub:.0f} ₽ за устройство в сутки.\n"
-        "• Баланс списывается ежедневно; при нулевом балансе VPN отключается.\n"
+        "• Баланс списывается ежедневно; при нулевом балансе доступ приостанавливается.\n"
         "• Оплата Stars и картой пополняет баланс; возврат — через поддержку.\n"
         "• Используя сервис, вы соглашаетесь с этими условиями.\n\n"
+        f"Полные условия: {settings.web_base_url.rstrip('/')}/about\n"
         f"Поддержка: /paysupport",
         parse_mode="HTML",
     )
@@ -97,7 +98,8 @@ async def cmd_paysupport(message: Message) -> None:
             "🧾 <b>Поддержка по оплатам</b>\n\n"
             "Если оплата прошла, но баланс не начислился — напишите в поддержку "
             "с указанием даты, суммы и способа оплаты.\n\n"
-            f'<a href="{url}">Написать @{handle}</a>\n\n'
+            f"📞 <a href=\"tel:89169046701\">+7 (916) 904-67-01</a>\n"
+            f'💬 <a href="{url}">Telegram @{handle}</a>\n\n'
             "Telegram не помогает с покупками в ботах — только мы.",
             parse_mode="HTML",
             disable_web_page_preview=True,
@@ -110,7 +112,7 @@ async def cmd_paysupport(message: Message) -> None:
         )
 
 
-@router.message(F.text.in_({"🔐 Подключить VPN", "Подключить VPN", "📱 Мои устройства", "💰 Баланс", "ℹ️ Помощь"}))
+@router.message(F.text.in_({"🔐 Подключить", "Подключить", "🔐 Подключить VPN", "Подключить VPN", "📱 Мои устройства", "💰 Баланс", "ℹ️ Помощь"}))
 async def legacy_menu_buttons(message: Message, session: AsyncSession) -> None:
     """Старые кнопки меню — перенаправляем в личный кабинет."""
     await message.answer(
@@ -133,7 +135,7 @@ async def show_cabinet(message: Message, session: AsyncSession) -> None:
     await message.answer(
         f"🌐 <b>Личный кабинет</b>\n\n"
         f"<a href=\"{link}\">{link}</a>\n\n"
-        "Там баланс, оплата и устройства — даже если Telegram заблокирован.",
+        "Там баланс, оплата и устройства — доступен из браузера.",
         parse_mode="HTML",
         disable_web_page_preview=True,
     )
@@ -168,7 +170,8 @@ async def show_support(message: Message) -> None:
     if url:
         await message.answer(
             f"🆘 <b>Поддержка</b>\n\n"
-            f'<a href="{url}">Написать @{handle}</a>',
+            f"📞 <a href=\"tel:89169046701\">+7 (916) 904-67-01</a>\n"
+            f'💬 <a href="{url}">Telegram @{handle}</a>',
             parse_mode="HTML",
             disable_web_page_preview=True,
         )

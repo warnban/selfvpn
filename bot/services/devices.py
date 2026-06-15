@@ -90,7 +90,7 @@ async def add_device(
     vpn_link = extract_vpn_link(result)
     vpn_config = config_from_panel_result(result)
     if not vpn_link:
-        raise ValueError(f"Панель не вернула vpn://. Ответ: {str(result)[:200]}")
+        raise ValueError(f"Сервер не вернул ключ подключения. Ответ: {str(result)[:200]}")
 
     device = Device(
         user_id=user.id,

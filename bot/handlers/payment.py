@@ -54,7 +54,7 @@ async def _send_stars_invoice(message: Message, session: AsyncSession, user: Use
     )
 
     await message.answer_invoice(
-        title=f"VPN — {days} дн.",
+        title=f"{settings.brand_name} — {days} дн.",
         description=(
             f"Пополнение баланса на {amount_rub:.0f} ₽ "
             f"({settings.daily_price_rub:.0f} ₽/сутки × {days} дн.)"
@@ -62,7 +62,7 @@ async def _send_stars_invoice(message: Message, session: AsyncSession, user: Use
         payload=f"{STARS_PAYLOAD_PREFIX}{payment.id}",
         provider_token="",
         currency="XTR",
-        prices=[LabeledPrice(label=f"{days} дн. VPN", amount=stars)],
+        prices=[LabeledPrice(label=f"{days} дн. сервиса", amount=stars)],
     )
 
 
@@ -283,7 +283,7 @@ async def admin_stats(message: Message, session: AsyncSession) -> None:
     await message.answer(
         f"📊 Статистика\n\n"
         f"Пользователей: {len(users)}\n"
-        f"Активных VPN: {sum(1 for u in users if u.vpn_active)}\n"
+        f"Активных подключений: {sum(1 for u in users if u.vpn_active)}\n"
         f"Заявок на оплату: {len(pending)}\n\n"
         f"🌐 Админ-панель:\n{settings.web_base_url.rstrip('/')}/admin\n\n"
         f"Тариф: {settings.daily_price_rub:.0f} ₽/сутки\n"

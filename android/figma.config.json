@@ -1,0 +1,17 @@
+{
+  "name": "VPN Mobile App Interface",
+  "fileKey": "CZuBcULZKcqfo3TvptliAL",
+  "url": "https://www.figma.com/make/CZuBcULZKcqfo3TvptliAL/VPN-Mobile-App-Interface",
+  "source": "figma-make",
+  "designTokens": {
+    "background": "#0a0d14",
+    "foreground": "#e8eaf0",
+    "card": "#111520",
+    "primary": "#00d4a1",
+    "secondary": "#1a1f2e",
+    "mutedForeground": "#5a6480",
+    "warning": "#f5c842",
+    "danger": "#e05260"
+  },
+  "implementedIn": "android/daddyvpn-app/app/src/main/java/site/daddyvpn/app/ui/theme/Color.kt"
+}

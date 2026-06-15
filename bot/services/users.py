@@ -223,7 +223,7 @@ async def provision_vpn(session: AsyncSession, user: User) -> str:
         vpn_link = "vpn://" + base64.b64encode(result["config"].encode()).decode()
     if not vpn_link:
         logger.error("Panel response without vpn link: %s", list(result.keys()))
-        raise ValueError(f"Панель не вернула vpn://. Ответ: {str(result)[:200]}")
+        raise ValueError(f"Сервер не вернул ключ подключения. Ответ: {str(result)[:200]}")
 
     user.vpn_link = vpn_link
     await session.commit()

@@ -1306,3 +1306,132 @@ label {
   .btn-group .btn { width: 100%; }
   .platform-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Site footer (all cabinet pages) ── */
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 10px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+}
+
+.site-footer-link {
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.site-footer-link:hover {
+  color: var(--primary);
+}
+
+.site-footer-sep {
+  color: var(--border);
+  user-select: none;
+}
+
+/* ── Legal / about page ── */
+.wrap--legal {
+  max-width: 520px;
+}
+
+.legal-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+
+.legal-nav a {
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.legal-nav a:hover {
+  text-decoration: underline;
+}
+
+.legal-intro {
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.legal-section h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.legal-section h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 20px 0 8px;
+  color: var(--text);
+}
+
+.legal-section p {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.65;
+  margin-bottom: 10px;
+}
+
+.legal-updated {
+  font-size: 0.75rem !important;
+  font-family: var(--font-mono);
+  margin-bottom: 16px !important;
+}
+
+.legal-list {
+  margin: 8px 0 12px 20px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.legal-list li {
+  margin-bottom: 6px;
+}
+
+.support-cards {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.support-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+
+.support-card:hover {
+  border-color: var(--primary-border);
+}
+
+.support-card-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.support-card-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary);
+}
