@@ -10,7 +10,11 @@ from sqlalchemy import select, text
 from bot.config import settings
 from bot.database.models import AppSetting, Base
 
-engine = create_async_engine(settings.database_url, echo=False)
+engine = create_async_engine(
+    settings.database_url,
+    echo=False,
+    connect_args={"timeout": 15},
+)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
@@ -176,6 +180,8 @@ async def _migrate_sqlite(conn) -> None:
                     )
 
     await conn.run_sync(run_migrations)
+    await conn.execute(text("PRAGMA journal_mode=WAL"))
+    await conn.execute(text("PRAGMA busy_timeout=15000"))
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

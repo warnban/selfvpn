@@ -55,6 +55,28 @@ app.include_router(mobile_router)
 app.include_router(auth_router)
 app.add_middleware(SessionMiddleware, secret_key=settings.web_secret_key)
 
+
+@app.middleware("http")
+async def log_slow_requests(request: Request, call_next):
+    import logging
+    import time
+
+    access_log = logging.getLogger("selfvpn.access")
+    path = request.url.path
+    if path.startswith("/auth/") or path.startswith("/cabinet"):
+        started = time.monotonic()
+        access_log.info("→ %s %s", request.method, path)
+        response = await call_next(request)
+        access_log.info(
+            "← %s %s %s (%.2fs)",
+            request.method,
+            path,
+            response.status_code,
+            time.monotonic() - started,
+        )
+        return response
+    return await call_next(request)
+
 templates.env.globals["brand_name"] = settings.brand_name
 templates.env.globals["support_tg"] = settings.support_tg_handle
 templates.env.globals["support_tg_url"] = settings.support_tg_url()

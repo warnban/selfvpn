@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +19,7 @@ from web.cabinet_helpers import login_session, logout_session
 from web.deps import get_db, templates
 
 router = APIRouter(tags=["auth"])
+logger = logging.getLogger(__name__)
 
 
 def _safe_next_url(next_url: str | None) -> str:
@@ -215,11 +218,17 @@ async def auth_resend_verification(
     next_url: str = Form("/cabinet"),
     session: AsyncSession = Depends(get_db),
 ):
-    from web.cabinet_helpers import get_user_from_session
+    from web.cabinet_helpers import get_session_user_id, get_user_from_session
 
     user = await get_user_from_session(request, session)
     if not user and cabinet_token:
         user = await get_user_by_cabinet_token(session, cabinet_token)
+    logger.info(
+        "resend-verification: session=%s token=%s user=%s",
+        bool(get_session_user_id(request)),
+        bool(cabinet_token),
+        user.id if user else None,
+    )
     if not user or not user.email or user.email_verified:
         target = _safe_cabinet_redirect(next_url)
         return RedirectResponse(target, status_code=303)
@@ -227,6 +236,7 @@ async def auth_resend_verification(
     login_session(request, user)
     background_tasks.add_task(send_verification_for_user_id, user.id)
     target = _safe_cabinet_redirect(next_url)
+    logger.info("resend-verification: redirect %s (email in background)", target)
     return RedirectResponse(f"{target}?verify=sent", status_code=303)
 
 

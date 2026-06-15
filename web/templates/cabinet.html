@@ -43,13 +43,13 @@
 {% endif %}
 {% if user.email and not user.email_verified %}
 <div class="alert alert-error">
-  Подтвердите email — проверьте почту или
-  <form method="post" action="/auth/resend-verification" style="display:inline">
-    <input type="hidden" name="cabinet_token" value="{{ user.cabinet_token }}">
-    <input type="hidden" name="next_url" value="{{ cabinet_base }}">
-    <button type="submit" class="link-btn">отправить повторно</button>
-  </form>
+  Подтвердите email — проверьте почту (и папку «Спам»).
 </div>
+<form method="post" action="/auth/resend-verification" class="resend-verify-form">
+  <input type="hidden" name="cabinet_token" value="{{ user.cabinet_token }}">
+  <input type="hidden" name="next_url" value="{{ cabinet_base }}">
+  <button type="submit" class="btn btn-secondary btn-sm btn-block">Отправить письмо повторно</button>
+</form>
 {% endif %}
 {% if request.query_params.get('err') %}
 <div class="alert alert-error">{{ request.query_params.get('err') }}</div>
