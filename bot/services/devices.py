@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.config import settings
 from bot.database.models import Device, User
 from bot.services.panel import panel_client
-from bot.services.vpn_config import prepare_panel_vpn, device_config_text, public_vpn_link, public_vpn_link_for_device
+from bot.services.vpn_config import prepare_panel_vpn, device_config_text, public_vpn_link
 
 logger = logging.getLogger(__name__)
 
