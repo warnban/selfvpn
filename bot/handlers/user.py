@@ -4,7 +4,7 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
-from bot.keyboards.main import BTN_CABINET, BTN_INVITE, BTN_SUPPORT, invite_kb, menu_for
+from bot.keyboards.main import BTN_ABOUT, BTN_CABINET, BTN_INVITE, BTN_SUPPORT, invite_kb, menu_for
 from bot.messages import new_user_welcome
 from bot.services.devices import count_devices, days_left_for
 from bot.services.users import count_referrals, get_user_by_telegram_id, register_user
@@ -110,6 +110,23 @@ async def cmd_paysupport(message: Message) -> None:
             "Напишите администратору с указанием даты, суммы и способа оплаты.",
             parse_mode="HTML",
         )
+
+
+@router.message(Command("about"))
+async def cmd_about(message: Message) -> None:
+    await show_about(message)
+
+
+@router.message(F.text == BTN_ABOUT)
+async def show_about(message: Message) -> None:
+    url = settings.about_url()
+    await message.answer(
+        f"ℹ️ <b>О сервисе</b>\n\n"
+        f"Условия, политика конфиденциальности и контакты поддержки:\n"
+        f'<a href="{url}">{url}</a>',
+        parse_mode="HTML",
+        disable_web_page_preview=False,
+    )
 
 
 @router.message(F.text.in_({"🔐 Подключить", "Подключить", "🔐 Подключить VPN", "Подключить VPN", "📱 Мои устройства", "💰 Баланс", "ℹ️ Помощь"}))

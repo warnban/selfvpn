@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import is_admin, settings
 from bot.keyboards.main import (
+    BTN_ABOUT,
     BTN_ADMIN,
     BTN_CABINET,
     BTN_INVITE,
@@ -73,7 +74,7 @@ async def admin_news_preview(message: Message, state: FSMContext, session: Async
         return
 
     text = message.text.strip()
-    menu_buttons = {BTN_ADMIN, "ADM PANEL", BTN_NEWS, "Новость", BTN_CABINET, BTN_INVITE, BTN_SUPPORT}
+    menu_buttons = {BTN_ADMIN, "ADM PANEL", BTN_NEWS, "Новость", BTN_CABINET, BTN_INVITE, BTN_ABOUT, BTN_SUPPORT}
     menu_buttons |= LEGACY_MENU_BUTTONS
     if text in menu_buttons:
         await message.answer("Это кнопка меню, а не текст новости. Напиши новость или /cancel")

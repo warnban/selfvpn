@@ -88,6 +88,9 @@ class Settings(BaseSettings):
     def support_tg_handle(self) -> str:
         return self.support_tg.lstrip("@")
 
+    def about_url(self) -> str:
+        return f"{self.web_base_url.rstrip('/')}/about"
+
     def support_tg_url(self) -> str:
         handle = self.support_tg_handle
         return f"https://t.me/{handle}" if handle else ""

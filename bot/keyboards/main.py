@@ -7,6 +7,7 @@ from bot.messages import AMNEZIA_ANDROID, AMNEZIA_WG_APPLE
 BTN_CABINET = "🌐 Личный кабинет"
 BTN_TOPUP = "⭐ Пополнить"
 BTN_INVITE = "👥 Пригласить"
+BTN_ABOUT = "ℹ️ О сервисе"
 BTN_SUPPORT = "🆘 Поддержка"
 BTN_ADMIN = "⚙️ ADM PANEL"
 BTN_NEWS = "📢 Новость"
@@ -32,6 +33,11 @@ def main_menu(*, is_admin: bool = False) -> ReplyKeyboardMarkup:
         [KeyboardButton(text=BTN_CABINET), KeyboardButton(text=BTN_TOPUP)],
         [KeyboardButton(text=BTN_INVITE)],
     ]
+    about_url = f"{settings.web_base_url.rstrip('/')}/about"
+    if about_url.startswith("https://"):
+        rows.append([KeyboardButton(text=BTN_ABOUT, url=about_url)])
+    else:
+        rows.append([KeyboardButton(text=BTN_ABOUT)])
     support_url = settings.support_tg_url()
     if support_url:
         rows.append([KeyboardButton(text=BTN_SUPPORT, url=support_url)])
