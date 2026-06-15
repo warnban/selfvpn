@@ -7,10 +7,10 @@
   </defs>
   <rect width="1200" height="630" fill="url(#grid)"/>
   <circle cx="600" cy="280" r="220" fill="#b8ff00" opacity="0.08"/>
-  <text x="80" y="220" font-family="Arial Black, sans-serif" font-size="96" font-weight="900" fill="#ffffff">VPN</text>
-  <text x="80" y="320" font-family="Arial Black, sans-serif" font-size="96" font-weight="900" fill="#b8ff00">" / !</text>
-  <text x="80" y="400" font-family="Arial, sans-serif" font-size="36" fill="#888888">AmneziaWG · 10 ½/ACB:8 · 2 4=O 15A?;0B=></text>
-  <text x="80" y="470" font-family="Arial, sans-serif" font-size="28" fill="#666666">57 ;>3>2 · 57 1;>:8@>2>: · >4:;NG5=85 2 Telegram</text>
+  <text x="80" y="200" font-family="Arial Black, sans-serif" font-size="72" font-weight="900" fill="#ffffff">INTERNET</text>
+  <text x="80" y="300" font-family="Arial Black, sans-serif" font-size="80" font-weight="900" fill="#b8ff00">OT DYADI SANI</text>
+  <text x="80" y="400" font-family="Arial, sans-serif" font-size="36" fill="#888888">AmneziaWG · 10 rub/day · 2 days free</text>
+  <text x="80" y="470" font-family="Arial, sans-serif" font-size="28" fill="#666666">No logs · Stable channel · Connect in Telegram</text>
   <rect x="80" y="510" width="280" height="56" fill="#b8ff00"/>
   <text x="110" y="548" font-family="Arial Black, sans-serif" font-size="28" font-weight="900" fill="#070707">daddyvpn.site</text>
 </svg>

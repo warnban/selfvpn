@@ -4,7 +4,7 @@ import { Shield, Zap, Lock, Eye, Globe, Clock, ChevronDown, Star, Send, CreditCa
 const LIME = "#b8ff00";
 
 const navLinks = [
-  { href: "#features", label: "протокол" },
+  { href: "#features", label: "возможности" },
   { href: "#pricing", label: "тарифы" },
   { href: "#faq", label: "faq" },
 ];
@@ -22,7 +22,7 @@ function Nav() {
             style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
             className="text-lg sm:text-2xl font-black tracking-tight text-white truncate"
           >
-            VPN<span style={{ color: LIME }}>.</span>ДЯДИ<span style={{ color: LIME }}>.</span>САНИ
+            NET<span style={{ color: LIME }}>.</span>ДЯДИ<span style={{ color: LIME }}>.</span>САНИ
           </span>
         </a>
 
@@ -103,20 +103,20 @@ function Hero() {
               style={{ borderColor: "rgba(184,255,0,0.3)", color: LIME, fontFamily: "'JetBrains Mono', monospace" }}
             >
               <span className="w-1.5 h-1.5 rounded-full shrink-0 animate-pulse" style={{ backgroundColor: LIME }} />
-              <span className="leading-tight">Протокол Amnezia — невидим для DPI</span>
+              <span className="leading-tight">Протокол AmneziaWG — стабильный канал</span>
             </div>
 
             <h1
               style={{ fontFamily: "'Barlow Condensed', sans-serif", lineHeight: 0.9 }}
               className="text-[52px] sm:text-[72px] md:text-[96px] lg:text-[110px] font-black uppercase text-white mb-5 sm:mb-6 tracking-tight"
             >
-              VPN<br />
+              ИНТЕРНЕТ<br />
               <span style={{ color: LIME }}>от Дяди</span><br />
               Сани
             </h1>
 
             <p className="text-[#888] text-base sm:text-lg mb-8 sm:mb-10 max-w-md" style={{ fontFamily: "'Manrope', sans-serif" }}>
-              Работает там, где другие уже сдались. Без логов, без слежки, без блокировок. Личный VPN на протоколе AmneziaWG — подключение в Telegram.
+              Персональный интернет-канал на протоколе AmneziaWG. Стабильно, быстро и без лишней суеты — подключение в Telegram за пару минут.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 sm:mb-10">
@@ -160,7 +160,7 @@ function Hero() {
                 <span className="ml-2 text-[10px] sm:text-xs text-[#444] truncate" style={{ fontFamily: "'JetBrains Mono', monospace" }}>anfikvpnbot</span>
               </div>
               <div className="p-4 sm:p-6 space-y-2 sm:space-y-3 text-[11px] sm:text-[13px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                <div className="text-[#444]">$ ping status.vpn</div>
+                <div className="text-[#444]">$ ping status.channel</div>
                 <div style={{ color: LIME }}>✓ Сервер онлайн — 99.9% uptime</div>
                 <div className="text-[#444] hidden sm:block">$ check protocol</div>
                 <div style={{ color: LIME }} className="hidden sm:block">✓ AmneziaWG активен</div>
@@ -198,17 +198,17 @@ const features = [
   {
     icon: Shield,
     title: "Amnezia WG",
-    desc: "Трафик выглядит как обычный HTTPS. DPI-системы провайдера не видят VPN. Работает даже там, где другие уже заблокированы.",
+    desc: "Современный протокол AmneziaWG для надёжного персонального канала. Стабильная работа при любой нагрузке на сеть.",
   },
   {
     icon: Zap,
     title: "Скорость до 1 Гбит/с",
-    desc: "Выделенный канал без ограничений по скорости. Стриминг, торренты, звонки — без тормозов.",
+    desc: "Выделенный канал без ограничений по скорости. Стриминг, загрузки, звонки — без тормозов.",
   },
   {
     icon: Eye,
     title: "Ноль логов",
-    desc: "Не ведём никаких журналов активности. Даже если очень попросят — нечего отдать.",
+    desc: "Не ведём журналов активности. Даже если очень попросят — нечего отдать.",
   },
   {
     icon: Globe,
@@ -217,8 +217,8 @@ const features = [
   },
   {
     icon: Lock,
-    title: "AES-256 + ChaCha20",
-    desc: "Военное шифрование. Ключи генерируются на вашем устройстве — мы их не видим.",
+    title: "Защита данных",
+    desc: "Ключи создаются на вашем устройстве. Мы не храним историю посещённых сайтов.",
   },
   {
     icon: Clock,
@@ -236,14 +236,14 @@ function Features() {
             className="text-xs tracking-widest uppercase mb-3 sm:mb-4"
             style={{ color: LIME, fontFamily: "'JetBrains Mono', monospace" }}
           >
-            01 / почему это работает
+            01 / почему выбирают нас
           </div>
           <h2
             style={{ fontFamily: "'Barlow Condensed', sans-serif", lineHeight: 0.95 }}
             className="text-4xl sm:text-6xl md:text-8xl font-black uppercase text-white"
           >
-            Невидимый<br />
-            <span style={{ color: LIME }}>протокол</span>
+            Стабильный<br />
+            <span style={{ color: LIME }}>интернет</span>
           </h2>
         </div>
 
@@ -336,7 +336,7 @@ function Pricing() {
                 "Скорость до 1 Гбит/с",
                 "Все устройства без ограничений",
                 "Протокол AmneziaWG",
-                "Шифрование AES-256 + ChaCha20",
+                "Защищённое соединение",
                 "Ноль логов",
                 "Живая поддержка в Telegram",
               ].map((f) => (
@@ -499,7 +499,7 @@ const testimonials = [
   {
     name: "Алексей М.",
     role: "разработчик",
-    text: "Пробовал кучу VPN — блокировались один за другим. Этот работает уже 4 месяца без единого сбоя. Amnezia реально не видно.",
+    text: "Пробовал разные сервисы — то тормозит, то рвётся. Здесь уже 4 месяца без единого сбоя. Канал держится стабильно.",
     stars: 5,
   },
   {
@@ -568,8 +568,8 @@ function Testimonials() {
 
 const faqs = [
   {
-    q: "Почему Amnezia лучше обычного WireGuard?",
-    a: "Обычный WireGuard имеет характерный отпечаток пакетов, который легко обнаруживается DPI-системами (глубокая инспекция трафика). AmneziaWG рандомизирует этот отпечаток — трафик выглядит как обычные зашифрованные данные. Провайдер не может понять, что это VPN.",
+    q: "Чем AmneziaWG отличается от обычного WireGuard?",
+    a: "AmneziaWG — развитие WireGuard с оптимизацией для стабильной работы в реальных сетях. Соединение остаётся быстрым и надёжным даже при высокой нагрузке на канал.",
   },
   {
     q: "Как именно оплатить через Telegram Stars?",
@@ -581,7 +581,7 @@ const faqs = [
   },
   {
     q: "Как работает реферальная программа?",
-    a: "После регистрации вы получаете личную ссылку. Каждый, кто подключится по ней и начнёт платить, приносит вам 30 ₽ на баланс. Накопленное можно использовать для оплаты своего VPN или вывести.",
+    a: "После регистрации вы получаете личную ссылку. Каждый, кто подключится по ней и начнёт платить, приносит вам 30 ₽ на баланс. Накопленное можно использовать для оплаты сервиса или вывести.",
   },
   {
     q: "Что будет после 2 бесплатных дней?",
@@ -657,7 +657,7 @@ function Footer() {
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 text-center md:text-left">
         <span style={{ fontFamily: "'Barlow Condensed', sans-serif" }} className="text-lg sm:text-xl font-black tracking-tight text-white">
-          VPN<span style={{ color: LIME }}>.</span>ДЯДИ<span style={{ color: LIME }}>.</span>САНИ
+          NET<span style={{ color: LIME }}>.</span>ДЯДИ<span style={{ color: LIME }}>.</span>САНИ
         </span>
 
         <div
@@ -665,6 +665,14 @@ function Footer() {
           style={{ color: "#444", fontFamily: "'JetBrains Mono', monospace" }}
         >
           10 ₽/сутки · 2 дня бесплатно · Amnezia WG · Без логов
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+          <a href="/about" className="text-[#666] hover:text-white transition-colors">О сервисе</a>
+          <span className="text-[#333]">·</span>
+          <a href="/about#privacy" className="text-[#666] hover:text-white transition-colors">Конфиденциальность</a>
+          <span className="text-[#333]">·</span>
+          <a href="/about#terms" className="text-[#666] hover:text-white transition-colors">Соглашение</a>
         </div>
 
         <a
