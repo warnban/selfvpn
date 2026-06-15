@@ -23,28 +23,32 @@ async def send_email(to: str, subject: str, html_body: str, text_body: str | Non
     msg.attach(MIMEText(plain, "plain", "utf-8"))
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
+    timeout = settings.smtp_timeout
+    port = settings.smtp_port
+    # 465 — implicit SSL; 587 — plain + STARTTLS
+    use_implicit_ssl = settings.smtp_use_ssl and port == 465
+    use_starttls = port == 587 or (not settings.smtp_use_ssl and port != 465)
+
     try:
-        if settings.smtp_use_ssl:
-            await aiosmtplib.send(
-                msg,
-                hostname=settings.smtp_host,
-                port=settings.smtp_port,
-                username=settings.smtp_user,
-                password=settings.smtp_password,
-                use_tls=True,
-            )
-        else:
-            await aiosmtplib.send(
-                msg,
-                hostname=settings.smtp_host,
-                port=settings.smtp_port,
-                username=settings.smtp_user,
-                password=settings.smtp_password,
-                start_tls=True,
-            )
+        await aiosmtplib.send(
+            msg,
+            hostname=settings.smtp_host,
+            port=port,
+            username=settings.smtp_user,
+            password=settings.smtp_password,
+            use_tls=use_implicit_ssl,
+            start_tls=use_starttls,
+            timeout=timeout,
+        )
         return True
     except Exception as exc:
-        logger.exception("Ошибка отправки email на %s: %s", to, exc)
+        logger.warning(
+            "Не удалось отправить email на %s (%s:%s): %s",
+            to,
+            settings.smtp_host,
+            port,
+            exc,
+        )
         return False
 
 

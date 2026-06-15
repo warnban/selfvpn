@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from: str = ""
     smtp_use_ssl: bool = True
+    smtp_timeout: int = 30
 
     @property
     def freekassa_enabled(self) -> bool:
