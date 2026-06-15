@@ -1,8 +1,8 @@
 import re
 import secrets
 
+import bcrypt
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
-from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,7 +10,6 @@ from bot.config import settings
 from bot.database.models import Referral, User
 from bot.services.email import send_password_reset_email, send_verification_email
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _token_serializer = URLSafeTimedSerializer(settings.web_secret_key)
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -18,13 +17,16 @@ MIN_PASSWORD_LEN = 8
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(password: str, password_hash: str | None) -> bool:
     if not password_hash:
         return False
-    return pwd_context.verify(password, password_hash)
+    try:
+        return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
+    except ValueError:
+        return False
 
 
 def normalize_email(email: str) -> str:

@@ -29,6 +29,75 @@ async def _migrate_sqlite(conn) -> None:
     if "sqlite" not in settings.database_url:
         return
 
+    def _rebuild_users_telegram_nullable(sync_conn, inspector) -> None:
+        if "users" not in inspector.get_table_names():
+            return
+        info = sync_conn.execute(text("PRAGMA table_info(users)")).fetchall()
+        tg = next((row for row in info if row[1] == "telegram_id"), None)
+        if not tg or tg[3] == 0:
+            return
+
+        existing = {row[1] for row in info}
+        columns = [
+            "id",
+            "telegram_id",
+            "username",
+            "first_name",
+            "display_name",
+            "email",
+            "password_hash",
+            "email_verified",
+            "auth_provider",
+            "balance_rub",
+            "referrer_id",
+            "vpn_client_id",
+            "vpn_link",
+            "vpn_active",
+            "cabinet_token",
+            "referral_bonus_paid",
+            "created_at",
+            "last_billed_at",
+        ]
+        copy_cols = [c for c in columns if c in existing]
+        if "id" not in copy_cols:
+            return
+
+        sync_conn.execute(text("PRAGMA foreign_keys=OFF"))
+        sync_conn.execute(
+            text(
+                """
+                CREATE TABLE users__new (
+                    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    telegram_id BIGINT,
+                    username VARCHAR(255),
+                    first_name VARCHAR(255),
+                    display_name VARCHAR(255),
+                    email VARCHAR(255),
+                    password_hash VARCHAR(255),
+                    email_verified BOOLEAN DEFAULT 0,
+                    auth_provider VARCHAR(16) DEFAULT 'telegram',
+                    balance_rub FLOAT DEFAULT 0.0,
+                    referrer_id INTEGER,
+                    vpn_client_id VARCHAR(128),
+                    vpn_link TEXT,
+                    vpn_active BOOLEAN DEFAULT 0,
+                    cabinet_token VARCHAR(64),
+                    referral_bonus_paid BOOLEAN DEFAULT 0,
+                    created_at DATETIME,
+                    last_billed_at DATETIME
+                )
+                """
+            )
+        )
+        col_list = ", ".join(copy_cols)
+        sync_conn.execute(text(f"INSERT INTO users__new ({col_list}) SELECT {col_list} FROM users"))
+        sync_conn.execute(text("DROP TABLE users"))
+        sync_conn.execute(text("ALTER TABLE users__new RENAME TO users"))
+        sync_conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_telegram_id ON users (telegram_id)"))
+        sync_conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email ON users (email)"))
+        sync_conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_cabinet_token ON users (cabinet_token)"))
+        sync_conn.execute(text("PRAGMA foreign_keys=ON"))
+
     def run_migrations(sync_conn):
         from sqlalchemy import inspect, text
 
@@ -49,6 +118,7 @@ async def _migrate_sqlite(conn) -> None:
                 sync_conn.execute(text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT 0"))
             if "auth_provider" not in cols:
                 sync_conn.execute(text("ALTER TABLE users ADD COLUMN auth_provider VARCHAR(16) DEFAULT 'telegram'"))
+            _rebuild_users_telegram_nullable(sync_conn, inspector)
             rows = sync_conn.execute(text("SELECT id FROM users WHERE cabinet_token IS NULL OR cabinet_token = ''")).fetchall()
             for (user_id,) in rows:
                 sync_conn.execute(

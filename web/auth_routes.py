@@ -85,31 +85,44 @@ async def auth_register_submit(
     ref: str = Form(""),
     session: AsyncSession = Depends(get_db),
 ):
-    if not settings.smtp_enabled:
-        from urllib.parse import quote
+    import logging
+    from urllib.parse import quote
 
+    logger = logging.getLogger(__name__)
+
+    if not settings.smtp_enabled:
         return RedirectResponse(
             f"/auth/register?error={quote('Регистрация временно недоступна')}",
             status_code=303,
         )
 
     ref_id = int(ref) if ref.isdigit() else None
-    user, err = await register_web_user(
-        session,
-        email=email,
-        password=password,
-        display_name=display_name or None,
-        referrer_user_id=ref_id,
-    )
-    if err or not user:
-        from urllib.parse import quote
+    try:
+        user, err = await register_web_user(
+            session,
+            email=email,
+            password=password,
+            display_name=display_name or None,
+            referrer_user_id=ref_id,
+        )
+    except Exception:
+        logger.exception("Registration failed for %s", email)
+        return RedirectResponse(
+            f"/auth/register?error={quote('Ошибка сервера. Попробуйте позже или напишите в поддержку.')}",
+            status_code=303,
+        )
 
+    if err or not user:
         qs = f"error={quote(err or 'Ошибка регистрации')}"
         if ref_id:
             qs += f"&ref={ref_id}"
         return RedirectResponse(f"/auth/register?{qs}", status_code=303)
 
-    await send_user_verification_email(user)
+    try:
+        await send_user_verification_email(user)
+    except Exception:
+        logger.exception("Verification email failed for user %s", user.id)
+
     login_session(request, user)
     return RedirectResponse("/cabinet?verify=sent", status_code=303)
 
