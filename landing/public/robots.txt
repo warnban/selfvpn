@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://daddyvpn.site/sitemap.xml

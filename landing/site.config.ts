@@ -3,10 +3,10 @@ export const SITE_URL = "https://daddyvpn.site";
 
 export const SITE_NAME = "Интернет от дяди Сани";
 export const SITE_TITLE =
-  "Интернет от дяди Сани — персональный канал AmneziaWG | 10 ₽/сутки";
+  "Быстрый интернет-канал для компьютера — AmneziaWG | 2 дня бесплатно, 10 ₽/сутки";
 export const SITE_DESCRIPTION =
-  "Персональный интернет-канал от дяди Сани: протокол AmneziaWG, скорость до 1 Гбит/с, без логов активности. 2 дня бесплатно, 10 ₽ в сутки. Оплата картой или Telegram Stars. Подключение за пару минут.";
+  "Защищённый персональный канал для Windows, macOS, Linux, Android и iOS. Скорость до 1 Гбит/с, без логов. 2 дня бесплатно — подключение через Telegram или веб-панель за пару минут.";
 export const SITE_KEYWORDS =
-  "интернет канал, ускоритель интернета, amnezia, amneziawg, личный кабинет, telegram бот, стабильный интернет, 10 рублей, интернет от дяди сани, daddyvpn";
+  "интернет канал для компьютера, быстрый защищённый канал, бесплатный пробный период, amneziawg, amnezia для windows, персональный туннель, защищённое соединение, стабильный интернет, интернет от дяди сани";
 export const BOT_USERNAME = "anfikvpnbot";
 export const OG_IMAGE_PATH = "/og-image.svg";

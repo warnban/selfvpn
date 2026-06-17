@@ -123,7 +123,7 @@ function Hero() {
             </h1>
 
             <p className="text-[#888] text-base sm:text-lg mb-8 sm:mb-10 max-w-md" style={{ fontFamily: "'Manrope', sans-serif" }}>
-              Персональный интернет-канал на протоколе AmneziaWG. Подключение через Telegram или веб-панель за пару минут.
+              Быстрый защищённый интернет-канал для компьютера и телефона на протоколе AmneziaWG. Подключение через Telegram или веб-панель за пару минут.
             </p>
 
             <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
@@ -169,6 +169,7 @@ function Hero() {
               style={{ fontFamily: "'JetBrains Mono', monospace", color: "#555" }}
             >
               <span><span style={{ color: LIME }}>✓</span>&nbsp;<span className="text-[#aaa]">2 дня бесплатно</span></span>
+              <span><span style={{ color: LIME }}>✓</span>&nbsp;<span className="text-[#aaa]">Windows · macOS · Linux</span></span>
               <span><span style={{ color: LIME }}>✓</span>&nbsp;<span className="text-[#aaa]">10 ₽/сутки</span></span>
               <span><span style={{ color: LIME }}>✓</span>&nbsp;<span className="text-[#aaa]">Оплата картой или Telegram ⭐</span></span>
               <span><span style={{ color: LIME }}>✓</span>&nbsp;<span className="text-[#aaa]">Без привязки карты</span></span>
@@ -240,8 +241,8 @@ const features = [
   },
   {
     icon: Globe,
-    title: "Все устройства",
-    desc: "iOS, Android, Windows, macOS, Linux. Один аккаунт — подключай сколько угодно устройств.",
+    title: "Для компьютера и телефона",
+    desc: "Windows, macOS, Linux, iOS, Android. Один аккаунт — подключай ноутбук, ПК, планшет и роутер без ограничений.",
   },
   {
     icon: Lock,
@@ -606,6 +607,18 @@ function Testimonials() {
 }
 
 const faqs = [
+  {
+    q: "Как подключить канал на компьютере (Windows, macOS, Linux)?",
+    a: "Напишите в Telegram-бот или зарегистрируйтесь в веб-панели — Саня пришлёт конфигурацию. Установите клиент AmneziaWG, импортируйте ключ и подключитесь за пару минут.",
+  },
+  {
+    q: "Можно ли попробовать бесплатно?",
+    a: "Да — 2 дня полного доступа без оплаты. Карту привязывать не нужно. После пробного периода канал просто приостановится, пока вы сами не пополните баланс.",
+  },
+  {
+    q: "Насколько быстрое соединение?",
+    a: "Скорость канала до 1 Гбит/с без ограничений по трафику. Подходит для стриминга, видеозвонков, игр и загрузок больших файлов.",
+  },
   {
     q: "Чем AmneziaWG отличается от обычного WireGuard?",
     a: "AmneziaWG — развитие WireGuard с оптимизацией для стабильной работы в реальных сетях. Соединение остаётся быстрым и надёжным даже при высокой нагрузке на канал.",
