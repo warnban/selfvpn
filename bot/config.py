@@ -42,8 +42,10 @@ class Settings(BaseSettings):
     support_tg: str = "aleblanche"
 
     freekassa_merchant_id: int = 0
+    freekassa_api_key: str = ""
     freekassa_secret_1: str = ""
     freekassa_secret_2: str = ""
+    freekassa_client_ip_fallback: str = ""
 
     smtp_host: str = ""
     smtp_port: int = 465
@@ -57,7 +59,7 @@ class Settings(BaseSettings):
     def freekassa_enabled(self) -> bool:
         return bool(
             self.freekassa_merchant_id
-            and self.freekassa_secret_1
+            and self.freekassa_api_key
             and self.freekassa_secret_2
         )
 

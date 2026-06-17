@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator
+import logging
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, Request
@@ -32,10 +33,14 @@ from bot.services.users import (
 )
 
 from bot.services.freekassa import (
-    FREEKASSA_PAY_URL,
+    FreekassaApiError,
+    FREEKASSA_METHOD_CARD,
+    FREEKASSA_METHOD_SBP,
+    create_payment_order,
     get_client_ip,
     is_freekassa_ip,
-    payment_form_fields,
+    payment_email_for_user,
+    resolve_payment_client_ip,
     verify_notification_signature,
 )
 from bot.messages import AMNEZIA_ANDROID, AMNEZIA_WG_APPLE
@@ -49,6 +54,8 @@ from web.cabinet_helpers import (
 )
 from web.deps import get_db, templates
 from web.mobile_api import router as mobile_router
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="SelfVPN Cabinet")
 app.include_router(mobile_router)
@@ -338,12 +345,15 @@ async def cabinet_pay_form(request: Request, token: str, session: AsyncSession =
 async def cabinet_session_pay_submit(
     request: Request,
     days: int = Form(...),
+    pay_method: int = Form(FREEKASSA_METHOD_SBP),
     session: AsyncSession = Depends(get_db),
 ):
     user = await get_user_from_session(request, session)
     if not user:
         return RedirectResponse("/auth/login", status_code=303)
-    return await _cabinet_pay_submit(request, user, days, session, pay_base="/cabinet")
+    return await _cabinet_pay_submit(
+        request, user, days, session, pay_base="/cabinet", pay_method=pay_method
+    )
 
 
 @app.post("/cabinet/{token}/pay")
@@ -351,6 +361,7 @@ async def cabinet_pay_submit(
     request: Request,
     token: str,
     days: int = Form(...),
+    pay_method: int = Form(FREEKASSA_METHOD_SBP),
     session: AsyncSession = Depends(get_db),
 ):
     if not _is_cabinet_token(token):
@@ -358,7 +369,14 @@ async def cabinet_pay_submit(
     user = await get_user_by_cabinet_token(session, token)
     if not user:
         return RedirectResponse("/", status_code=303)
-    return await _cabinet_pay_submit(request, user, days, session, pay_base=f"/cabinet/{token}")
+    return await _cabinet_pay_submit(
+        request,
+        user,
+        days,
+        session,
+        pay_base=f"/cabinet/{token}",
+        pay_method=pay_method,
+    )
 
 
 async def _cabinet_pay_submit(
@@ -368,12 +386,16 @@ async def _cabinet_pay_submit(
     session: AsyncSession,
     *,
     pay_base: str,
+    pay_method: int,
 ):
     if days < 1 or days > 365:
         return RedirectResponse(f"{pay_base}/pay", status_code=303)
 
     if not settings.freekassa_enabled:
         return RedirectResponse(f"{pay_base}/pay", status_code=303)
+
+    if pay_method not in (FREEKASSA_METHOD_SBP, FREEKASSA_METHOD_CARD):
+        return RedirectResponse(f"{pay_base}/pay?error=method", status_code=303)
 
     amount = settings.price_for_days(days)
     await cancel_pending_freekassa_for_user(session, user)
@@ -384,21 +406,21 @@ async def _cabinet_pay_submit(
         days,
         source="freekassa",
     )
-    fields = payment_form_fields(
-        amount,
-        str(payment.id),
-        cabinet_token=user.cabinet_token,
-    )
-    return templates.TemplateResponse(
-        request,
-        "pay_redirect.html",
-        {
-            "pay_url": FREEKASSA_PAY_URL,
-            "fields": fields,
-            "amount": amount,
-            "days": days,
-        },
-    )
+
+    try:
+        pay_url = await create_payment_order(
+            amount,
+            str(payment.id),
+            payment_email_for_user(user),
+            resolve_payment_client_ip(request),
+            pay_method,
+        )
+    except FreekassaApiError as exc:
+        logger.exception("Freekassa order creation failed for payment %s: %s", payment.id, exc)
+        await reject_payment(session, payment, "Ошибка создания заказа Freekassa")
+        return RedirectResponse(f"{pay_base}/pay?error=api", status_code=303)
+
+    return RedirectResponse(pay_url, status_code=303)
 
 
 @app.get("/cabinet/{token}", response_class=HTMLResponse)

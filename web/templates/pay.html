@@ -29,6 +29,18 @@
       {% endfor %}
     </select>
 
+    <label for="pay_method">Способ оплаты</label>
+    <select name="pay_method" id="pay_method" required>
+      <option value="44">СБП (QR-код)</option>
+      <option value="36">Банковская карта (РФ)</option>
+    </select>
+
+    {% if request.query_params.get('error') == 'api' %}
+    <div class="alert alert-error" style="margin-bottom:20px">Не удалось создать платёж. Попробуйте ещё раз или выберите другой способ оплаты.</div>
+    {% elif request.query_params.get('error') == 'method' %}
+    <div class="alert alert-error" style="margin-bottom:20px">Выбран недоступный способ оплаты.</div>
+    {% endif %}
+
     <div class="stat-box" style="margin-bottom:20px">
       <div class="value" id="priceHint">—</div>
       <div class="label">К оплате</div>

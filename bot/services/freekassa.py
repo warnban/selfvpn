@@ -1,11 +1,20 @@
 import hashlib
+import hmac
 import logging
+import time
+from typing import Any
+
+import httpx
 
 from bot.config import settings
+from bot.database.models import User
 
 logger = logging.getLogger(__name__)
 
-FREEKASSA_PAY_URL = "https://pay.fk.money/"
+FREEKASSA_API_URL = "https://api.fk.life/v1/"
+FREEKASSA_METHOD_SBP = 44
+FREEKASSA_METHOD_CARD = 36
+FREEKASSA_PAY_METHODS = frozenset({FREEKASSA_METHOD_SBP, FREEKASSA_METHOD_CARD})
 
 FREEKASSA_IPS = frozenset(
     {
@@ -17,6 +26,12 @@ FREEKASSA_IPS = frozenset(
 )
 
 
+class FreekassaApiError(Exception):
+    def __init__(self, message: str, *, response: dict[str, Any] | None = None):
+        super().__init__(message)
+        self.response = response
+
+
 def _md5(value: str) -> str:
     return hashlib.md5(value.encode()).hexdigest()
 
@@ -25,17 +40,18 @@ def format_amount(amount: float) -> str:
     return f"{amount:.2f}"
 
 
-def payment_form_signature(amount: float, order_id: str, currency: str = "RUB") -> str:
-    raw = ":".join(
-        [
-            str(settings.freekassa_merchant_id),
-            format_amount(amount),
-            settings.freekassa_secret_1,
-            currency,
-            order_id,
-        ]
-    )
-    return _md5(raw)
+def _api_signature_payload(data: dict[str, Any]) -> str:
+    sorted_values = [str(data[key]) for key in sorted(data.keys())]
+    return "|".join(sorted_values)
+
+
+def _sign_api_request(data: dict[str, Any]) -> str:
+    sign_payload = _api_signature_payload(data)
+    return hmac.new(
+        settings.freekassa_api_key.encode(),
+        sign_payload.encode(),
+        hashlib.sha256,
+    ).hexdigest()
 
 
 def notification_signature(merchant_id: str, amount: str, order_id: str) -> str:
@@ -60,25 +76,103 @@ def is_freekassa_ip(client_ip: str) -> bool:
 def get_client_ip(request) -> str:
     forwarded = request.headers.get("x-real-ip")
     if forwarded:
-        return forwarded.strip()
+        return forwarded.strip().split(",")[0].strip()
+
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        return forwarded_for.strip().split(",")[0].strip()
+
     if request.client:
         return request.client.host
     return ""
 
 
-def payment_form_fields(
+def resolve_payment_client_ip(request) -> str:
+    ip = get_client_ip(request)
+    if ip and ip not in {"127.0.0.1", "::1", "0.0.0.0"}:
+        return ip
+
+    if settings.freekassa_client_ip_fallback:
+        return settings.freekassa_client_ip_fallback
+
+    logger.warning("Freekassa payment IP fallback used: local or missing client IP (%s)", ip)
+    return "72.56.124.163"
+
+
+def payment_email_for_user(user: User) -> str:
+    if user.email:
+        return user.email
+    if user.telegram_id:
+        return f"{user.telegram_id}@telegram.org"
+    return f"user{user.id}@telegram.org"
+
+
+def _payment_location_from_response(body: dict[str, Any]) -> str:
+    location = str(body.get("location") or body.get("Location") or "").strip()
+    if location:
+        return location
+
+    order_id = body.get("orderId")
+    order_hash = body.get("orderHash")
+    if order_id and order_hash:
+        return f"https://pay.freekassa.net/form/{order_id}/{order_hash}"
+
+    return ""
+
+
+async def create_payment_order(
     amount: float,
-    order_id: str,
+    payment_id: str,
+    email: str,
+    client_ip: str,
+    payment_method: int,
     *,
-    cabinet_token: str,
     currency: str = "RUB",
-) -> dict[str, str]:
-    return {
-        "m": str(settings.freekassa_merchant_id),
-        "oa": format_amount(amount),
+) -> str:
+    if payment_method not in FREEKASSA_PAY_METHODS:
+        raise FreekassaApiError(f"unsupported payment method: {payment_method}")
+
+    data: dict[str, Any] = {
+        "shopId": settings.freekassa_merchant_id,
+        "nonce": int(time.time() * 1000),
+        "paymentId": payment_id,
+        "i": payment_method,
+        "email": email,
+        "ip": client_ip,
+        "amount": format_amount(amount),
         "currency": currency,
-        "o": order_id,
-        "s": payment_form_signature(amount, order_id, currency),
-        "lang": "ru",
-        "us_token": cabinet_token,
+        "success_url": settings.payment_success_url(),
+        "failure_url": settings.payment_fail_url(),
+        "notification_url": settings.payment_notify_url(),
     }
+
+    signature = _sign_api_request(data)
+    request_body = {**data, "signature": signature}
+
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.post(
+                f"{FREEKASSA_API_URL}orders/create",
+                json=request_body,
+            )
+    except httpx.HTTPError as exc:
+        logger.exception("Freekassa API request failed")
+        raise FreekassaApiError("Freekassa API request failed") from exc
+
+    try:
+        body = response.json()
+    except ValueError as exc:
+        logger.error("Freekassa API invalid JSON: %s", response.text[:500])
+        raise FreekassaApiError("Freekassa API returned invalid JSON") from exc
+
+    if response.status_code >= 400 or body.get("type") != "success":
+        message = body.get("message") or body.get("error") or f"HTTP {response.status_code}"
+        logger.error("Freekassa create order failed: %s %s", message, body)
+        raise FreekassaApiError(str(message), response=body)
+
+    location = _payment_location_from_response(body)
+    if not location:
+        logger.error("Freekassa create order missing payment URL: %s", body)
+        raise FreekassaApiError("Freekassa did not return payment URL", response=body)
+
+    return location
