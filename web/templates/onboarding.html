@@ -45,7 +45,7 @@
         <p class="ob-lead">Выберите платформу — создадим настройки на сервере.</p>
         <p class="ob-meta">Привет, {{ display_name }} · на балансе {{ "%.0f"|format(user.balance_rub) }} ₽ (~{{ days_left }} дн.) · <a href="{{ cabinet_base }}/pay">Пополнить</a></p>
 
-        <form method="post" action="{{ cabinet_base }}/devices/add" class="platform-cards ob-platforms">
+        <form method="post" action="{{ cabinet_base }}/devices/add" class="platform-cards ob-platforms js-device-add-form">
           <button class="platform-card" type="submit" name="platform" value="android">
             <span class="platform-card-icon">📱</span>
             <span class="platform-card-body"><strong>Android</strong><span>Amnezia → ключ</span></span>
@@ -76,6 +76,9 @@
         {% if d %}
         {% set use_conf = d.platform in ['ios', 'mac'] %}
         {% set icon = '📱' if d.platform in ['android', 'ios'] else ('🖥' if d.platform == 'windows' else '💻') %}
+        {% if request.query_params.get('created') == '1' %}
+        <div class="alert alert-success device-created-banner ob-created-banner">✓ {% if use_conf %}Файл настроек готов{% else %}Ключ создан{% endif %} — {% if use_conf %}скачайте его ниже{% else %}скопируйте ниже{% endif %}</div>
+        {% endif %}
         <p class="ob-device-badge">{{ icon }} {{ platform_label(d.platform) }}</p>
         <h2 class="ob-title">{% if use_conf %}Скачайте файл{% else %}Скопируйте ключ{% endif %}</h2>
         <p class="ob-lead">{% if use_conf %}Сохраните файл и откройте в AmneziaWG{% else %}Нажмите кнопку — ключ скопируется{% endif %}</p>
@@ -142,6 +145,7 @@
 {% block site_footer %}{% endblock %}
 
 {% block scripts %}
+<script src="/static/js/device-add.js"></script>
 <script>
 (function () {
   const flow = document.querySelector('.onboarding-flow');

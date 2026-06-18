@@ -15,6 +15,13 @@
     {% block content %}{% endblock %}
     {% block site_footer %}{% include "_site_footer.html" %}{% endblock %}
   </div>
+  <div class="device-add-overlay" id="deviceAddOverlay" hidden aria-hidden="true">
+    <div class="device-add-overlay-card" role="status">
+      <div class="device-add-spinner" aria-hidden="true"></div>
+      <p class="device-add-overlay-title" id="deviceAddOverlayTitle">Создаём настройки…</p>
+      <p class="device-add-overlay-hint">Обычно 10–30 секунд. Не закрывайте страницу.</p>
+    </div>
+  </div>
   {% block scripts %}{% endblock %}
 </body>
 </html>

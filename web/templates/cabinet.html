@@ -91,6 +91,10 @@
       <span class="lk-section-count">{{ device_count }}/{{ max_devices }}</span>
     </div>
 
+    {% if request.query_params.get('created') == '1' %}
+    <div class="alert alert-success device-created-banner">✓ Устройство добавлено — ключ или файл ниже</div>
+    {% endif %}
+
     {% if devices %}
     {% for d in devices %}
     {% set use_conf = d.platform in ['ios', 'mac'] %}
@@ -143,7 +147,7 @@
     <div class="lk-add" id="add-device">
       <h3 class="lk-add-title">➕ Добавить устройство</h3>
       <p class="lk-add-desc">{{ "%.0f"|format(daily_price) }} ₽/сутки за каждое новое</p>
-      <form method="post" action="{{ cabinet_base }}/devices/add" class="platform-cards platform-cards--compact">
+      <form method="post" action="{{ cabinet_base }}/devices/add" class="platform-cards platform-cards--compact js-device-add-form">
         <button class="platform-card platform-card--compact" type="submit" name="platform" value="android">
           <span class="platform-card-icon">📱</span>
           <span class="platform-card-body"><strong>Android</strong></span>
@@ -193,6 +197,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="/static/js/device-add.js"></script>
 <script>
 async function copyKey(id, btn) {
   const el = document.getElementById(id);

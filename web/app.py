@@ -147,10 +147,11 @@ def _redirect_after_device_add(user: User, *, via_session: bool, err: str | None
         base = onboarding_base_path(user, via_session)
         if err:
             return f"{base}?err={quote(err)}&step=1"
-        return f"{base}?step=2"
+        return f"{base}?step=2&created=1"
     base = cabinet_base_path(user, via_session)
-    suffix = f"?err={quote(err)}" if err else ""
-    return f"{base}{suffix}#devices"
+    if err:
+        return f"{base}?err={quote(err)}"
+    return f"{base}?created=1#devices"
 
 
 def is_admin(request: Request) -> bool:
