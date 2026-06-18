@@ -38,6 +38,7 @@
     <select name="pay_method" id="pay_method" required>
       <option value="44">СБП (НСПК)</option>
       <option value="36">Банковская карта (РФ)</option>
+      <option value="12">Банковская карта МИР</option>
     </select>
 
     {% if request.query_params.get('error') == 'api' %}
