@@ -36,10 +36,8 @@
 
     <label for="pay_method">Способ оплаты</label>
     <select name="pay_method" id="pay_method" required>
-      <option value="44">СБП (QR-код)</option>
-      <option value="42">СБП</option>
+      <option value="44">СБП (НСПК)</option>
       <option value="36">Банковская карта (РФ)</option>
-      <option value="6">ЮMoney</option>
     </select>
 
     {% if request.query_params.get('error') == 'api' %}
