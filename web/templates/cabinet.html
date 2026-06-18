@@ -4,26 +4,24 @@
 {% block wrap_class %}wrap--cabinet{% endblock %}
 
 {% block header %}
-<header class="header">
+<header class="header header--cabinet">
   <div class="brand">
     <div class="brand-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
       </svg>
     </div>
     <div>
-      <p class="brand-label">Сервис</p>
+      <p class="brand-label">Личный кабинет</p>
       <h1>{{ brand_name }}</h1>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:8px">
-    {% if via_session %}
-    <a class="btn btn-secondary btn-sm" href="/cabinet/profile">Профиль</a>
-    {% endif %}
+  <div class="header-actions">
     {% if device_count > 0 %}
     <span class="badge badge-ok">{{ device_count }} устр.</span>
-    {% else %}
-    <span class="badge badge-off">нет устройств</span>
+    {% endif %}
+    {% if via_session %}
+    <a class="btn btn-secondary btn-sm" href="/cabinet/profile">Профиль</a>
     {% endif %}
   </div>
 </header>
@@ -31,20 +29,18 @@
 
 {% block content %}
 {% if request.query_params.get('paid') == 'ok' %}
-<div class="alert alert-success">Оплата принята. Баланс обновится автоматически в течение минуты.</div>
+<div class="alert alert-success">Оплата принята. Баланс обновится в течение минуты.</div>
 {% elif request.query_params.get('paid') == 'fail' %}
 <div class="alert alert-error">Оплата не прошла. Попробуйте ещё раз.</div>
 {% endif %}
 {% if request.query_params.get('verify') == 'sent' %}
-<div class="alert alert-success">Письмо с подтверждением отправлено на {{ user.email }}.</div>
+<div class="alert alert-success">Письмо отправлено на {{ user.email }}.</div>
 {% endif %}
 {% if request.query_params.get('verified') == '1' %}
-<div class="alert alert-success">Email подтверждён. Спасибо!</div>
+<div class="alert alert-success">Email подтверждён!</div>
 {% endif %}
 {% if user.email and not user.email_verified %}
-<div class="alert alert-error">
-  Подтвердите email — проверьте почту (и папку «Спам»).
-</div>
+<div class="alert alert-error">Подтвердите email — проверьте почту и «Спам».</div>
 <form method="post" action="/auth/resend-verification" class="resend-verify-form">
   <input type="hidden" name="cabinet_token" value="{{ user.cabinet_token }}">
   <input type="hidden" name="next_url" value="{{ cabinet_base }}">
@@ -58,7 +54,8 @@
 {% set progress = [days_left * 100 / 30, 100]|min|int %}
 {% set days_class = 'days-ok' if days_left > 14 else ('days-warn' if days_left > 5 else 'days-low') %}
 
-<main class="stack">
+<main class="stack cabinet">
+
   <div class="balance-card">
     <div class="balance-card-accent"></div>
     <div class="balance-card-body">
@@ -76,180 +73,115 @@
         <div class="progress-fill" style="width: {{ progress }}%"></div>
       </div>
       <div class="balance-meta">
-        <span>Тариф: <strong>{{ "%.0f"|format(daily_price) }} ₽ / сутки</strong></span>
+        <span>{{ device_count }} устр. · {{ "%.0f"|format(daily_cost) }} ₽/сутки</span>
         <span class="{% if days_left <= 5 %}warn{% endif %}">
-          {% if days_left <= 5 %}⚠ Скоро закончится{% else %}Списание {{ "%.0f"|format(daily_cost) }} ₽/сутки{% endif %}
+          {% if days_left <= 5 %}⚠ Пополните скоро{% else %}{{ "%.0f"|format(daily_price) }} ₽ за устройство{% endif %}
         </span>
       </div>
-      <p class="greeting" style="margin-top:16px">
-        Привет, <strong>{{ display_name }}</strong>{% if user.username %} · @{{ user.username }}{% endif %}
-      </p>
+      <p class="greeting">Привет, <strong>{{ display_name }}</strong>{% if user.username %} · @{{ user.username }}{% endif %}</p>
     </div>
     <div class="balance-card-footer">
-      <a class="btn btn-block" href="{{ cabinet_base }}/pay">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-        Пополнить баланс
-      </a>
+      <a class="btn btn-block" href="{{ cabinet_base }}/pay">Пополнить баланс</a>
     </div>
   </div>
 
-  <section class="setup-guide card" id="setup-guide">
-    <h2 class="setup-guide-title">📖 Как подключиться</h2>
-    <div class="setup-guide-grid">
-      <div class="setup-guide-block">
-        <p class="setup-block-title"><strong>Android</strong></p>
-        <ol class="steps">
-          <li>Добавьте устройство ниже</li>
-          <li>Скопируйте <strong>ключ</strong></li>
-          <li><a href="{{ amnezia_android }}" target="_blank" rel="noopener">Amnezia</a>: ➕ → «Вставить ключ»</li>
-        </ol>
-      </div>
-      <div class="setup-guide-block">
-        <p class="setup-block-title"><strong>iPhone / Mac</strong></p>
-        <ol class="steps">
-          <li>Добавьте устройство ниже</li>
-          <li>Скачайте <strong>.conf</strong></li>
-          <li><a href="{{ amnezia_wg_apple }}" target="_blank" rel="noopener">AmneziaWG</a>: «Из файла или архива»</li>
-        </ol>
-      </div>
-    </div>
-  </section>
-
-  <div class="status-pill">
-    <div class="pulse-wrap">
-      {% if device_count > 0 %}
-      <span class="pulse-ring"></span>
-      <span class="pulse-dot"></span>
-      {% else %}
-      <span class="pulse-dot" style="background:var(--muted);opacity:0.5"></span>
-      {% endif %}
-    </div>
-    <span class="status-pill-label">Статус:</span>
-    <span class="status-pill-value">{% if device_count > 0 %}Активен{% else %}Нет устройств{% endif %}</span>
-    <span class="status-pill-right">{{ device_count }}/{{ max_devices }} устр.</span>
-  </div>
-
-  <section id="devices">
-    <div class="section-head">
-      <p class="section-title">Устройства <span>{{ device_count }}</span></p>
+  <section class="lk-section" id="devices">
+    <div class="lk-section-head">
+      <h2 class="lk-section-title">Мои устройства</h2>
+      <span class="lk-section-count">{{ device_count }}/{{ max_devices }}</span>
     </div>
 
     {% if devices %}
     {% for d in devices %}
-    {% set icon = '📱' if d.platform in ['android', 'ios'] else ('🖥' if d.platform in ['windows', 'mac'] else '📡') %}
     {% set use_conf = d.platform in ['ios', 'mac'] %}
-    <div class="device-card">
-      <div class="device-row">
-        <div class="device-icon">{{ icon }}</div>
-        <div class="device-info">
-          <p class="device-name">{{ d.name or platform_label(d.platform) }}</p>
-          <p class="device-status">{{ platform_label(d.platform) }}</p>
+    {% set icon = '📱' if d.platform in ['android', 'ios'] else ('🖥' if d.platform == 'windows' else '💻') %}
+    <article class="lk-device">
+      <header class="lk-device-head">
+        <span class="lk-device-icon">{{ icon }}</span>
+        <div class="lk-device-meta">
+          <strong>{{ d.name or platform_label(d.platform) }}</strong>
+          <span>{{ platform_label(d.platform) }}</span>
         </div>
         <form method="post" action="{{ cabinet_base }}/devices/{{ d.id }}/remove"
-              onsubmit="return confirm('Удалить устройство «{{ d.name }}»? Ключ перестанет работать.');">
-          <button class="btn-icon" type="submit" title="Удалить">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              onsubmit="return confirm('Удалить «{{ d.name }}»? Подключение перестанет работать.');">
+          <button class="btn-icon" type="submit" title="Удалить" aria-label="Удалить">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
             </svg>
           </button>
         </form>
+      </header>
+      <div class="lk-device-actions">
+        {% if use_conf %}
+        <a class="btn btn-secondary btn-block lk-action-btn" href="{{ cabinet_base }}/devices/{{ d.id }}/conf">
+          📄 Скачать файл настроек
+        </a>
+        <p class="lk-device-hint">AmneziaWG → «Добавить туннель» → «Из файла»</p>
+        {% else %}
+        <textarea class="key-box-hidden" id="key{{ d.id }}" readonly aria-hidden="true">{{ d.vpn_link | branded_vpn_link(d.panel_server_id) }}</textarea>
+        <button type="button" class="btn btn-secondary btn-block lk-action-btn copy-btn" data-target="key{{ d.id }}">
+          🔑 Скопировать ключ
+        </button>
+        <p class="lk-device-hint">Amnezia → ➕ → «Вставить ключ» → Подключить</p>
+        {% endif %}
       </div>
-      <div class="device-connect">
-        <div class="connect-tabs" role="tablist" aria-label="Способ подключения">
-          <button type="button" class="connect-tab{% if not use_conf %} active{% endif %}" role="tab"
-                  aria-selected="{{ 'true' if not use_conf else 'false' }}"
-                  data-mode="key" data-device="{{ d.id }}">🔑 Ключ</button>
-          <button type="button" class="connect-tab{% if use_conf %} active{% endif %}" role="tab"
-                  aria-selected="{{ 'true' if use_conf else 'false' }}"
-                  data-mode="conf" data-device="{{ d.id }}">📄 Conf-файл</button>
-        </div>
-        <div class="connect-panel connect-panel-key{% if use_conf %} hidden{% endif %}" data-device="{{ d.id }}" data-mode="key">
-          <textarea class="key-box-hidden" id="key{{ d.id }}" readonly aria-hidden="true">{{ d.vpn_link | branded_vpn_link(d.panel_server_id) }}</textarea>
-          <button type="button" class="key-copy-btn copy-btn" data-target="key{{ d.id }}">
-            <div style="flex:1;min-width:0">
-              <p class="key-copy-label">Ключ подключения</p>
-              <p class="key-copy-preview">{{ (d.vpn_link | branded_vpn_link(d.panel_server_id))[:42] }}{% if d.vpn_link and (d.vpn_link | branded_vpn_link(d.panel_server_id))|length > 42 %}…{% endif %}</p>
-            </div>
-            <span class="key-copy-icon">
-              <svg class="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
-              <svg class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none">
-                <path d="M20 6 9 17l-5-5"/>
-              </svg>
-            </span>
-          </button>
-          <p class="connect-hint">Amnezia (Android): ➕ → «Вставить ключ» → Подключить</p>
-        </div>
-        <div class="connect-panel connect-panel-conf{% if not use_conf %} hidden{% endif %}" data-device="{{ d.id }}" data-mode="conf">
-          <a class="conf-download-btn" href="{{ cabinet_base }}/devices/{{ d.id }}/conf">
-            <div style="flex:1;min-width:0">
-              <p class="key-copy-label">Conf-файл AmneziaWG</p>
-              <p class="key-copy-preview">Скачать .conf для импорта в приложение</p>
-            </div>
-            <span class="key-copy-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-            </span>
-          </a>
-          <p class="connect-hint">AmneziaWG (iPhone / Mac): «Добавить туннель» → «Из файла или архива»</p>
-        </div>
-      </div>
-    </div>
+    </article>
     {% endfor %}
     {% else %}
-    <p class="device-empty">Добавьте устройство — получите ключ (Android) или conf-файл (iPhone / Mac).</p>
+    <div class="lk-empty">
+      <p>Устройств пока нет. Добавьте первое ниже.</p>
+    </div>
     {% endif %}
 
     {% if device_count < max_devices %}
-    <form method="post" action="{{ cabinet_base }}/devices/add" class="add-device" style="margin-top:12px">
-      <p class="muted">Добавить устройство (+{{ "%.0f"|format(daily_price) }} ₽/сутки):</p>
-      <div class="platform-grid">
-        <button class="btn btn-secondary" name="platform" value="android" type="submit">📱 Android</button>
-        <button class="btn btn-secondary" name="platform" value="ios" type="submit">🍎 iPhone/iPad</button>
-        <button class="btn btn-secondary" name="platform" value="windows" type="submit">🖥 Windows</button>
-        <button class="btn btn-secondary" name="platform" value="mac" type="submit">💻 macOS</button>
-      </div>
-    </form>
+    <div class="lk-add" id="add-device">
+      <h3 class="lk-add-title">➕ Добавить устройство</h3>
+      <p class="lk-add-desc">{{ "%.0f"|format(daily_price) }} ₽/сутки за каждое новое</p>
+      <form method="post" action="{{ cabinet_base }}/devices/add" class="platform-cards platform-cards--compact">
+        <button class="platform-card platform-card--compact" type="submit" name="platform" value="android">
+          <span class="platform-card-icon">📱</span>
+          <span class="platform-card-body"><strong>Android</strong></span>
+        </button>
+        <button class="platform-card platform-card--compact" type="submit" name="platform" value="ios">
+          <span class="platform-card-icon">🍎</span>
+          <span class="platform-card-body"><strong>iPhone</strong></span>
+        </button>
+        <button class="platform-card platform-card--compact" type="submit" name="platform" value="windows">
+          <span class="platform-card-icon">🖥</span>
+          <span class="platform-card-body"><strong>Windows</strong></span>
+        </button>
+        <button class="platform-card platform-card--compact" type="submit" name="platform" value="mac">
+          <span class="platform-card-icon">💻</span>
+          <span class="platform-card-body"><strong>Mac</strong></span>
+        </button>
+      </form>
+    </div>
     {% else %}
-    <p class="muted" style="margin-top:12px">Достигнут лимит устройств ({{ max_devices }}).</p>
+    <p class="muted lk-limit">Лимит {{ max_devices }} устройств. Удалите одно, чтобы добавить новое.</p>
     {% endif %}
   </section>
 
-  <div class="card">
-    <h2>Рефералы</h2>
-    <div class="row"><span>Приглашено</span><strong>{{ referrals }} чел.</strong></div>
-    <div class="row"><span>Бонус за друга</span><strong>{{ referral_bonus }} ₽</strong></div>
-    <p class="muted" style="margin-top:12px">Ваша реферальная ссылка:</p>
-    <button type="button" class="key-copy-btn copy-btn" data-target="refLink" style="margin-top:8px">
-      <div style="flex:1;min-width:0;text-align:left">
-        <p class="key-copy-label">Ссылка для друзей</p>
-        <p class="key-copy-preview" id="refPreview">{{ referral_web_link[:48] }}…</p>
+  <details class="extras-fold">
+    <summary>Рефералы и поддержка</summary>
+    <div class="extras-fold-body">
+      <div class="extras-block">
+        <h4>👥 Пригласить друга</h4>
+        <p class="muted">+{{ referral_bonus }} ₽ · приглашено: {{ referrals }}</p>
+        <button type="button" class="btn btn-secondary btn-block copy-btn" data-target="refLink">Скопировать ссылку</button>
+        <textarea class="key-box-hidden" id="refLink" readonly aria-hidden="true">{{ referral_web_link }}</textarea>
+        {% if referral_tg_link %}
+        <p class="muted" style="margin-top:8px"><a href="{{ referral_tg_link }}" target="_blank" rel="noopener">Пригласить в Telegram</a></p>
+        {% endif %}
       </div>
-    </button>
-    <textarea class="key-box-hidden" id="refLink" readonly aria-hidden="true">{{ referral_web_link }}</textarea>
-    {% if referral_tg_link %}
-    <p class="muted" style="margin-top:12px;font-size:13px">Или через Telegram: <a href="{{ referral_tg_link }}" target="_blank" rel="noopener">пригласить в боте</a></p>
-    {% endif %}
-  </div>
-
-  <a class="panel panel-link" href="/about">
-    <span>О сервисе</span>
-    <span class="panel-link-meta">Условия · Контакты</span>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-  </a>
-
-  <a class="panel panel-link" href="{{ support_tg_url }}" target="_blank" rel="noopener">
-    <span>Написать в поддержку</span>
-    <span class="panel-link-meta">@{{ support_tg }}</span>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
-  </a>
+      <a class="panel panel-link" href="/about"><span>О сервисе</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a>
+      <a class="panel panel-link" href="{{ support_tg_url }}" target="_blank" rel="noopener"><span>Поддержка</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a>
+    </div>
+  </details>
 
   {% if via_session %}
-  <p class="footer-note">Вы вошли по email · <a href="/auth/logout">Выйти</a></p>
+  <p class="footer-note">Вход по email · <a href="/auth/logout">Выйти</a></p>
   {% else %}
-  <p class="footer-note">Сохраните страницу в закладки · <a href="/auth/login">Войти по email</a></p>
+  <p class="footer-note">Сохраните в закладки · <a href="/auth/login">Войти по email</a></p>
   {% endif %}
 </main>
 {% endblock %}
@@ -260,60 +192,21 @@ async function copyKey(id, btn) {
   const el = document.getElementById(id);
   if (!el) return;
   const text = (el.value || el.innerText || '').trim();
-  const iconCopy = btn.querySelector('.icon-copy');
-  const iconCheck = btn.querySelector('.icon-check');
-
-  function showOk() {
-    btn.classList.add('copied');
-    if (iconCopy) iconCopy.style.display = 'none';
-    if (iconCheck) iconCheck.style.display = 'block';
-    setTimeout(() => {
-      btn.classList.remove('copied');
-      if (iconCopy) iconCopy.style.display = 'block';
-      if (iconCheck) iconCheck.style.display = 'none';
-    }, 2000);
-  }
-
+  const prev = btn.textContent;
   if (navigator.clipboard && window.isSecureContext) {
-    try {
-      await navigator.clipboard.writeText(text);
-      showOk();
-      return;
-    } catch (e) { /* fallback */ }
+    try { await navigator.clipboard.writeText(text); btn.textContent = '✓ Скопировано'; setTimeout(() => { btn.textContent = prev; }, 2000); return; } catch (e) {}
   }
-
   try {
-    if (el.select) {
-      el.focus();
-      el.select();
-      el.setSelectionRange(0, text.length);
-    }
-    if (document.execCommand('copy')) {
-      showOk();
-      return;
-    }
-  } catch (e) { /* ignore */ }
-
-  alert('Выделите текст и нажмите Ctrl+C');
+    if (el.select) { el.focus(); el.select(); }
+    if (document.execCommand('copy')) { btn.textContent = '✓ Скопировано'; setTimeout(() => { btn.textContent = prev; }, 2000); return; }
+  } catch (e) {}
+  alert('Не удалось скопировать автоматически');
 }
-
 document.querySelectorAll('.copy-btn').forEach((btn) => {
   btn.addEventListener('click', () => copyKey(btn.dataset.target, btn));
 });
-
-document.querySelectorAll('.connect-tab').forEach((tab) => {
-  tab.addEventListener('click', () => {
-    const deviceId = tab.dataset.device;
-    const mode = tab.dataset.mode;
-    document.querySelectorAll(`.connect-tab[data-device="${deviceId}"]`).forEach((t) => {
-      const active = t === tab;
-      t.classList.toggle('active', active);
-      t.setAttribute('aria-selected', active ? 'true' : 'false');
-    });
-    document.querySelectorAll(`.connect-panel[data-device="${deviceId}"]`).forEach((panel) => {
-      panel.classList.toggle('hidden', panel.dataset.mode !== mode);
-    });
-  });
-});
+if (location.hash === '#devices') {
+  document.getElementById('devices')?.scrollIntoView({ behavior: 'smooth' });
+}
 </script>
 {% endblock %}

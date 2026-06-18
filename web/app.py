@@ -49,8 +49,11 @@ from web.auth_routes import router as auth_router
 from web.cabinet_helpers import (
     build_cabinet_context,
     cabinet_base_path,
+    complete_onboarding,
     get_user_from_session,
     login_session,
+    needs_onboarding,
+    onboarding_base_path,
 )
 from web.deps import get_db, templates
 from web.mobile_api import router as mobile_router
@@ -117,6 +120,29 @@ async def _render_cabinet(
     return templates.TemplateResponse(request, "cabinet.html", ctx)
 
 
+async def _render_onboarding(
+    request: Request,
+    user: User,
+    session: AsyncSession,
+    *,
+    via_session: bool,
+):
+    ctx = await build_cabinet_context(request, user, session, via_session=via_session)
+    return templates.TemplateResponse(request, "onboarding.html", ctx)
+
+
+def _redirect_after_device_add(user: User, *, via_session: bool, err: str | None = None) -> str:
+    from urllib.parse import quote
+
+    if needs_onboarding(user):
+        base = onboarding_base_path(user, via_session)
+        suffix = f"?err={quote(err)}" if err else ""
+        return f"{base}{suffix}#connect"
+    base = cabinet_base_path(user, via_session)
+    suffix = f"?err={quote(err)}" if err else ""
+    return f"{base}{suffix}#devices"
+
+
 def is_admin(request: Request) -> bool:
     return request.session.get("admin") is True
 
@@ -181,7 +207,7 @@ async def about(request: Request) -> HTMLResponse:
     )
 
 
-CABINET_RESERVED = frozenset({"pay", "profile", "devices", "add"})
+CABINET_RESERVED = frozenset({"pay", "profile", "devices", "add", "onboarding"})
 
 
 def _is_cabinet_token(value: str) -> bool:
@@ -193,7 +219,37 @@ async def cabinet_session(request: Request, session: AsyncSession = Depends(get_
     user = await get_user_from_session(request, session)
     if not user:
         return RedirectResponse("/auth/login?next=/cabinet", status_code=303)
+    if needs_onboarding(user):
+        return RedirectResponse("/cabinet/onboarding", status_code=303)
     return await _render_cabinet(request, user, session, via_session=True)
+
+
+@app.get("/cabinet/onboarding", response_class=HTMLResponse)
+async def cabinet_session_onboarding(request: Request, session: AsyncSession = Depends(get_db)):
+    user = await get_user_from_session(request, session)
+    if not user:
+        return RedirectResponse("/auth/login?next=/cabinet/onboarding", status_code=303)
+    if not needs_onboarding(user):
+        return RedirectResponse("/cabinet", status_code=303)
+    return await _render_onboarding(request, user, session, via_session=True)
+
+
+@app.post("/cabinet/onboarding/complete")
+async def cabinet_session_onboarding_complete(
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+):
+    user = await get_user_from_session(request, session)
+    if not user:
+        return RedirectResponse("/auth/login", status_code=303)
+    if not await complete_onboarding(session, user):
+        from urllib.parse import quote
+
+        return RedirectResponse(
+            "/cabinet/onboarding?err=" + quote("Сначала добавьте устройство"),
+            status_code=303,
+        )
+    return RedirectResponse("/cabinet", status_code=303)
 
 
 @app.post("/cabinet/devices/add")
@@ -211,8 +267,8 @@ async def cabinet_session_device_add(
     except Exception as exc:
         from urllib.parse import quote
 
-        return RedirectResponse(f"{base}?err={quote(str(exc)[:120])}", status_code=303)
-    return RedirectResponse(f"{base}#devices", status_code=303)
+        return RedirectResponse(_redirect_after_device_add(user, via_session=True, err=str(exc)[:120]), status_code=303)
+    return RedirectResponse(_redirect_after_device_add(user, via_session=True), status_code=303)
 
 
 @app.post("/cabinet/{token}/devices/add")
@@ -229,10 +285,11 @@ async def cabinet_device_add(
     try:
         await add_device(session, user, platform)
     except Exception as exc:
-        from urllib.parse import quote
-
-        return RedirectResponse(f"/cabinet/{token}?err={quote(str(exc)[:120])}", status_code=303)
-    return RedirectResponse(f"/cabinet/{token}#devices", status_code=303)
+        return RedirectResponse(
+            _redirect_after_device_add(user, via_session=False, err=str(exc)[:120]),
+            status_code=303,
+        )
+    return RedirectResponse(_redirect_after_device_add(user, via_session=False), status_code=303)
 
 
 @app.post("/cabinet/devices/{device_id}/remove")
@@ -245,6 +302,8 @@ async def cabinet_session_device_remove(
     if not user:
         return RedirectResponse("/auth/login", status_code=303)
     await remove_device(session, user, device_id)
+    if needs_onboarding(user):
+        return RedirectResponse("/cabinet/onboarding#connect", status_code=303)
     return RedirectResponse("/cabinet#devices", status_code=303)
 
 
@@ -260,6 +319,8 @@ async def cabinet_device_remove(
     if not user:
         return RedirectResponse("/", status_code=303)
     await remove_device(session, user, device_id)
+    if needs_onboarding(user):
+        return RedirectResponse(f"/cabinet/{token}/onboarding#connect", status_code=303)
     return RedirectResponse(f"/cabinet/{token}#devices", status_code=303)
 
 
@@ -436,7 +497,51 @@ async def cabinet(request: Request, token: str, session: AsyncSession = Depends(
             status_code=404,
         )
     login_session(request, user)
+    if needs_onboarding(user):
+        return RedirectResponse(f"/cabinet/{token}/onboarding", status_code=303)
     return await _render_cabinet(request, user, session, via_session=False)
+
+
+@app.get("/cabinet/{token}/onboarding", response_class=HTMLResponse)
+async def cabinet_token_onboarding(
+    request: Request,
+    token: str,
+    session: AsyncSession = Depends(get_db),
+):
+    if not _is_cabinet_token(token):
+        return RedirectResponse("/cabinet", status_code=303)
+    user = await get_user_by_cabinet_token(session, token)
+    if not user:
+        return templates.TemplateResponse(
+            request,
+            "error.html",
+            {"title": "Не найдено", "message": "Ссылка недействительна."},
+            status_code=404,
+        )
+    login_session(request, user)
+    if not needs_onboarding(user):
+        return RedirectResponse(f"/cabinet/{token}", status_code=303)
+    return await _render_onboarding(request, user, session, via_session=False)
+
+
+@app.post("/cabinet/{token}/onboarding/complete")
+async def cabinet_token_onboarding_complete(
+    token: str,
+    session: AsyncSession = Depends(get_db),
+):
+    if not _is_cabinet_token(token):
+        return RedirectResponse("/cabinet", status_code=303)
+    user = await get_user_by_cabinet_token(session, token)
+    if not user:
+        return RedirectResponse("/", status_code=303)
+    if not await complete_onboarding(session, user):
+        from urllib.parse import quote
+
+        return RedirectResponse(
+            f"/cabinet/{token}/onboarding?err=" + quote("Сначала добавьте устройство"),
+            status_code=303,
+        )
+    return RedirectResponse(f"/cabinet/{token}", status_code=303)
 
 
 async def _resolve_cabinet_token(request: Request, session: AsyncSession) -> str | None:

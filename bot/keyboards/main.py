@@ -99,12 +99,12 @@ def device_created_kb(device_id: int) -> InlineKeyboardMarkup:
     """Показывается после создания устройства: выбор способа подключения."""
     rows = [
         [
-            InlineKeyboardButton(text="🔑 Ключ", callback_data=f"dev_key:{device_id}"),
-            InlineKeyboardButton(text="📄 Conf-файл", callback_data=f"dev_conf:{device_id}"),
+            InlineKeyboardButton(text="🔑 Получить ключ", callback_data=f"dev_key:{device_id}"),
+            InlineKeyboardButton(text="📄 Скачать файл", callback_data=f"dev_conf:{device_id}"),
         ],
         [
-            InlineKeyboardButton(text="📱 Android", url=AMNEZIA_ANDROID),
-            InlineKeyboardButton(text="🍎 iPhone / Mac", url=AMNEZIA_WG_APPLE),
+            InlineKeyboardButton(text="📱 Amnezia (Android)", url=AMNEZIA_ANDROID),
+            InlineKeyboardButton(text="🍎 AmneziaWG (Apple)", url=AMNEZIA_WG_APPLE),
         ],
         [InlineKeyboardButton(text="➕ Добавить ещё", callback_data="dev_add")],
         [InlineKeyboardButton(text="📱 К моим устройствам", callback_data="dev_list")],
@@ -119,7 +119,7 @@ def devices_kb(devices: list) -> InlineKeyboardMarkup:
         rows.append(
             [
                 InlineKeyboardButton(text=f"🔑 {d.name}", callback_data=f"dev_key:{d.id}"),
-                InlineKeyboardButton(text="📄 Conf", callback_data=f"dev_conf:{d.id}"),
+                InlineKeyboardButton(text="📄 Файл", callback_data=f"dev_conf:{d.id}"),
             ]
         )
         rows.append([InlineKeyboardButton(text=f"🗑 Удалить «{d.name}»", callback_data=f"dev_del:{d.id}")])

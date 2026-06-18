@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
 from bot.keyboards.main import BTN_ABOUT, BTN_CABINET, BTN_INVITE, BTN_SUPPORT, invite_kb, menu_for
-from bot.messages import new_user_welcome
+from bot.messages import cabinet_intro, new_user_welcome
 from bot.services.devices import count_devices, days_left_for
 from bot.services.auth import link_telegram_to_user, load_telegram_link_user_id
 from bot.services.users import count_referrals, get_user_by_telegram_id, register_user
@@ -117,9 +117,9 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
         left = await days_left_for(session, user)
         text = (
             f"С возвращением, <b>{name}</b>!\n\n"
-            f"💰 Баланс: <b>{user.balance_rub:.0f} ₽</b>\n"
-            f"📱 Устройств: <b>{devices}</b> (~{left} дн.)\n\n"
-            f"🌐 <a href=\"{cabinet_link}\">Личный кабинет</a>"
+            f"💰 Баланс: <b>{user.balance_rub:.0f} ₽</b> · ~{left} дн.\n"
+            f"📱 Устройств: <b>{devices}</b>\n\n"
+            f"🌐 <a href=\"{cabinet_link}\">Личный кабинет</a> — ключи и настройка подключения"
         )
         await message.answer(text, reply_markup=menu_for(message.from_user.id), parse_mode="HTML")
 
@@ -187,12 +187,19 @@ async def show_about(message: Message) -> None:
 @router.message(F.text.in_({"🔐 Подключить", "Подключить", "🔐 Подключить VPN", "Подключить VPN", "📱 Мои устройства", "💰 Баланс", "ℹ️ Помощь"}))
 async def legacy_menu_buttons(message: Message, session: AsyncSession) -> None:
     """Старые кнопки меню — перенаправляем в личный кабинет."""
+    from bot.messages import amnezia_setup_steps
+
+    extra = ""
+    if message.text in {"ℹ️ Помощь", "🔐 Подключить", "Подключить", "🔐 Подключить VPN", "Подключить VPN"}:
+        extra = f"\n\n{amnezia_setup_steps()}"
+
     await message.answer(
-        "Эта кнопка больше не в меню.\n"
-        "Всё в <b>личном кабинете</b> — баланс, оплата и устройства.\n"
+        "Эта кнопка больше не в меню — всё в <b>личном кабинете</b>."
+        f"{extra}\n\n"
         "Нажми /menu чтобы обновить клавиатуру.",
         reply_markup=menu_for(message.from_user.id),
         parse_mode="HTML",
+        disable_web_page_preview=True,
     )
     await show_cabinet(message, session)
 
@@ -204,10 +211,10 @@ async def show_cabinet(message: Message, session: AsyncSession) -> None:
         await message.answer("Сначала нажми /start")
         return
     link = settings.cabinet_url(user.cabinet_token)
+    devices = await count_devices(session, user)
+    left = await days_left_for(session, user)
     await message.answer(
-        f"🌐 <b>Личный кабинет</b>\n\n"
-        f"<a href=\"{link}\">{link}</a>\n\n"
-        "Там баланс, оплата и устройства — доступен из браузера.",
+        cabinet_intro(link, device_count=devices, days_left=left),
         parse_mode="HTML",
         disable_web_page_preview=True,
     )

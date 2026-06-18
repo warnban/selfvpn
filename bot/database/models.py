@@ -37,6 +37,7 @@ class User(Base):
     cabinet_token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
 
     referral_bonus_paid: Mapped[bool] = mapped_column(Boolean, default=False)
+    onboarding_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_billed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 

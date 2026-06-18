@@ -53,6 +53,27 @@ def cabinet_base_path(user: User, via_session: bool) -> str:
     return f"/cabinet/{user.cabinet_token}"
 
 
+def onboarding_base_path(user: User, via_session: bool) -> str:
+    if via_session:
+        return "/cabinet/onboarding"
+    return f"/cabinet/{user.cabinet_token}/onboarding"
+
+
+def needs_onboarding(user: User) -> bool:
+    return not user.onboarding_completed
+
+
+async def complete_onboarding(session: AsyncSession, user: User) -> bool:
+    """Returns False if user has no devices."""
+    from bot.services.devices import count_devices
+
+    if await count_devices(session, user) < 1:
+        return False
+    user.onboarding_completed = True
+    await session.commit()
+    return True
+
+
 async def build_cabinet_context(
     request: Request,
     user: User,
@@ -86,6 +107,7 @@ async def build_cabinet_context(
         "payment_bank": settings.payment_bank,
         "payment_holder": settings.payment_holder,
         "cabinet_base": base,
+        "onboarding_base": onboarding_base_path(user, via_session),
         "via_session": via_session,
         "has_password": bool(user.password_hash),
         "has_telegram": bool(user.telegram_id),

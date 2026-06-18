@@ -11,7 +11,7 @@ from bot.keyboards.main import (
     devices_kb,
     platform_choice_kb,
 )
-from bot.messages import device_connect_choice, vpn_conf_instructions, vpn_key_instructions
+from bot.messages import device_connect_choice, devices_empty_hint, vpn_conf_instructions, vpn_key_instructions
 from bot.services.devices import (
     add_device,
     days_left_for,
@@ -60,7 +60,7 @@ async def _devices_overview(session: AsyncSession, user) -> str:
         for d in devices:
             text += f"• {platform_label(d.platform)} — {d.name}\n"
     else:
-        text += "У тебя пока нет устройств. Нажми «➕ Добавить устройство»."
+        text += devices_empty_hint()
     return text
 
 
@@ -141,7 +141,7 @@ async def cb_device_create(callback: CallbackQuery, session: AsyncSession) -> No
 
     await _safe_edit(
         callback.message,
-        device_connect_choice(device.name),
+        device_connect_choice(device.name, device.platform),
         device_created_kb(device.id),
     )
 

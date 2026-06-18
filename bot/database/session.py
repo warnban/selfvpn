@@ -122,6 +122,15 @@ async def _migrate_sqlite(conn) -> None:
                 sync_conn.execute(text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT 0"))
             if "auth_provider" not in cols:
                 sync_conn.execute(text("ALTER TABLE users ADD COLUMN auth_provider VARCHAR(16) DEFAULT 'telegram'"))
+            if "onboarding_completed" not in cols:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN onboarding_completed BOOLEAN DEFAULT 0"))
+                if "devices" in inspector.get_table_names():
+                    sync_conn.execute(
+                        text(
+                            "UPDATE users SET onboarding_completed = 1 "
+                            "WHERE id IN (SELECT DISTINCT user_id FROM devices)"
+                        )
+                    )
             _rebuild_users_telegram_nullable(sync_conn, inspector)
             rows = sync_conn.execute(text("SELECT id FROM users WHERE cabinet_token IS NULL OR cabinet_token = ''")).fetchall()
             for (user_id,) in rows:
