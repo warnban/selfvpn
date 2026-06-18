@@ -2213,4 +2213,220 @@ label {
 
 .platform-card--compact .platform-card-body strong { font-size: 0.8125rem; }
 
+/* ── Onboarding: fullscreen step wizard ── */
+.onboarding-mode .site-footer { display: none; }
+
+.wrap--onboarding {
+  max-width: 440px;
+  min-height: 100dvh;
+  padding-top: 24px;
+  padding-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.header--onboarding { margin-bottom: 12px; }
+
+.onboarding-flow {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ob-alert { margin-bottom: 12px; flex-shrink: 0; }
+
+.ob-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 8px 0 20px;
+  flex-shrink: 0;
+}
+
+.ob-progress-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  color: var(--muted);
+  transition: all 0.25s ease;
+}
+
+.ob-progress-dot.is-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-fg);
+  box-shadow: 0 0 20px rgba(57, 232, 122, 0.35);
+}
+
+.ob-progress-dot.is-done {
+  background: var(--primary-dim);
+  border-color: var(--primary-border);
+  color: var(--primary);
+}
+
+.ob-progress-line {
+  width: 40px;
+  height: 2px;
+  background: var(--border);
+  transition: background 0.25s;
+}
+
+.ob-progress-line.is-done { background: var(--primary-border); }
+
+.ob-screens {
+  flex: 1;
+  position: relative;
+  min-height: 420px;
+}
+
+.ob-screen {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(20px);
+  transition: opacity 0.28s ease, transform 0.28s ease, visibility 0.28s;
+  display: flex;
+  flex-direction: column;
+}
+
+.ob-screen.is-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(0);
+  position: relative;
+}
+
+.ob-screen-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 24px 20px;
+  min-height: 380px;
+}
+
+.ob-screen-inner--center {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.ob-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  margin-bottom: 8px;
+}
+
+.ob-lead {
+  font-size: 0.9375rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.ob-meta {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ob-device-badge {
+  font-size: 0.8125rem;
+  color: var(--primary);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.ob-platforms {
+  flex: 1;
+  justify-content: center;
+}
+
+.ob-main-action {
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.ob-tips {
+  list-style: none;
+  margin: 0 0 auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ob-tips li {
+  font-size: 0.875rem;
+  color: var(--muted);
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  line-height: 1.4;
+}
+
+.ob-tips a { color: var(--primary); font-weight: 500; }
+.ob-tips strong { color: var(--text); }
+
+.ob-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.ob-nav-next { font-weight: 600; }
+
+.ob-back-link {
+  margin-top: 12px;
+  font-size: 0.8125rem;
+}
+
+.ob-success-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--primary-dim);
+  border: 2px solid var(--primary-border);
+  color: var(--primary);
+  font-size: 2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.ob-finish-form {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+@media (max-height: 700px) {
+  .ob-screens { min-height: 360px; }
+  .ob-screen-inner { min-height: 320px; padding: 18px 16px; }
+  .platform-card { padding: 12px; }
+}
+
+
 

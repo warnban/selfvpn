@@ -160,8 +160,8 @@ async def cb_device_key(callback: CallbackQuery, session: AsyncSession) -> None:
         return
 
     await callback.message.answer(
-        vpn_key_instructions(public_vpn_link_for_device(device), device.name),
-        reply_markup=app_download_kb(),
+        vpn_key_instructions(public_vpn_link_for_device(device), device.name, device.platform),
+        reply_markup=app_download_kb(device.platform),
         parse_mode="HTML",
     )
     await callback.answer()
@@ -189,7 +189,7 @@ async def cb_device_conf(callback: CallbackQuery, session: AsyncSession) -> None
     await callback.message.answer_document(
         BufferedInputFile(config.encode("utf-8"), filename=filename),
         caption=vpn_conf_instructions(device.name),
-        reply_markup=app_download_kb(),
+        reply_markup=app_download_kb(device.platform),
         parse_mode="HTML",
     )
     await callback.answer()

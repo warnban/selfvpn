@@ -2,7 +2,7 @@ from urllib.parse import quote
 
 from aiogram.types import CopyTextButton, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 
-from bot.messages import AMNEZIA_ANDROID, AMNEZIA_WG_APPLE
+from bot.messages import AMNEZIA_ANDROID, AMNEZIA_WINDOWS, AMNEZIA_WG_APPLE
 
 BTN_CABINET = "🌐 Личный кабинет"
 BTN_TOPUP = "⭐ Пополнить"
@@ -84,15 +84,21 @@ def invite_kb(ref_link: str) -> InlineKeyboardMarkup:
     )
 
 
-def app_download_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text="📱 Android", url=AMNEZIA_ANDROID),
-                InlineKeyboardButton(text="🍎 iPhone", url=AMNEZIA_WG_APPLE),
-            ],
-        ]
-    )
+def app_download_kb(platform: str = "") -> InlineKeyboardMarkup:
+    rows = [
+        [
+            InlineKeyboardButton(text="📱 Android", url=AMNEZIA_ANDROID),
+            InlineKeyboardButton(text="🖥 Windows", url=AMNEZIA_WINDOWS),
+        ],
+        [InlineKeyboardButton(text="🍎 iPhone / Mac", url=AMNEZIA_WG_APPLE)],
+    ]
+    if platform == "windows":
+        rows = [[InlineKeyboardButton(text="🖥 Скачать для Windows", url=AMNEZIA_WINDOWS)]]
+    elif platform == "android":
+        rows = [[InlineKeyboardButton(text="📱 Скачать для Android", url=AMNEZIA_ANDROID)]]
+    elif platform in ("ios", "mac"):
+        rows = [[InlineKeyboardButton(text="🍎 Скачать AmneziaWG", url=AMNEZIA_WG_APPLE)]]
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def device_created_kb(device_id: int) -> InlineKeyboardMarkup:
@@ -104,8 +110,9 @@ def device_created_kb(device_id: int) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(text="📱 Amnezia (Android)", url=AMNEZIA_ANDROID),
-            InlineKeyboardButton(text="🍎 AmneziaWG (Apple)", url=AMNEZIA_WG_APPLE),
+            InlineKeyboardButton(text="🖥 Windows (.exe)", url=AMNEZIA_WINDOWS),
         ],
+        [InlineKeyboardButton(text="🍎 AmneziaWG (Apple)", url=AMNEZIA_WG_APPLE)],
         [InlineKeyboardButton(text="➕ Добавить ещё", callback_data="dev_add")],
         [InlineKeyboardButton(text="📱 К моим устройствам", callback_data="dev_list")],
     ]

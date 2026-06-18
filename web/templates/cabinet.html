@@ -122,7 +122,13 @@
         <button type="button" class="btn btn-secondary btn-block lk-action-btn copy-btn" data-target="key{{ d.id }}">
           🔑 Скопировать ключ
         </button>
-        <p class="lk-device-hint">Amnezia → ➕ → «Вставить ключ» → Подключить</p>
+        <p class="lk-device-hint">
+          {% if d.platform == 'windows' %}
+          <a href="{{ amnezia_windows }}" target="_blank" rel="noopener">Скачать Amnezia для Windows</a> → ➕ → «Вставить ключ» → Подключить
+          {% else %}
+          <a href="{{ amnezia_android }}" target="_blank" rel="noopener">Скачать Amnezia</a> → ➕ → «Вставить ключ» → Подключить
+          {% endif %}
+        </p>
         {% endif %}
       </div>
     </article>

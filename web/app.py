@@ -43,7 +43,7 @@ from bot.services.freekassa import (
     resolve_payment_client_ip,
     verify_notification_signature,
 )
-from bot.messages import AMNEZIA_ANDROID, AMNEZIA_WG_APPLE
+from bot.messages import AMNEZIA_ANDROID, AMNEZIA_WINDOWS, AMNEZIA_WG_APPLE
 from bot.services.vpn_config import safe_conf_filename
 from web.auth_routes import router as auth_router
 from web.cabinet_helpers import (
@@ -91,6 +91,7 @@ templates.env.globals["brand_name"] = settings.brand_name
 templates.env.globals["support_tg"] = settings.support_tg_handle
 templates.env.globals["support_tg_url"] = settings.support_tg_url()
 templates.env.globals["amnezia_android"] = AMNEZIA_ANDROID
+templates.env.globals["amnezia_windows"] = AMNEZIA_WINDOWS
 templates.env.globals["amnezia_wg_apple"] = AMNEZIA_WG_APPLE
 templates.env.globals["platform_label"] = platform_label
 templates.env.globals["max_devices"] = settings.max_devices
@@ -128,6 +129,14 @@ async def _render_onboarding(
     via_session: bool,
 ):
     ctx = await build_cabinet_context(request, user, session, via_session=via_session)
+    if ctx["device_count"] > 0:
+        try:
+            step = int(request.query_params.get("step", "2"))
+        except (TypeError, ValueError):
+            step = 2
+        ctx["onboarding_step"] = max(2, min(3, step))
+    else:
+        ctx["onboarding_step"] = 1
     return templates.TemplateResponse(request, "onboarding.html", ctx)
 
 
@@ -136,8 +145,9 @@ def _redirect_after_device_add(user: User, *, via_session: bool, err: str | None
 
     if needs_onboarding(user):
         base = onboarding_base_path(user, via_session)
-        suffix = f"?err={quote(err)}" if err else ""
-        return f"{base}{suffix}#connect"
+        if err:
+            return f"{base}?err={quote(err)}&step=1"
+        return f"{base}?step=2"
     base = cabinet_base_path(user, via_session)
     suffix = f"?err={quote(err)}" if err else ""
     return f"{base}{suffix}#devices"

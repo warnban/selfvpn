@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Настройка — {{ brand_name }}{% endblock %}
-{% block body_class %}theme-cabinet{% endblock %}
-{% block wrap_class %}wrap--cabinet{% endblock %}
+{% block body_class %}theme-cabinet onboarding-mode{% endblock %}
+{% block wrap_class %}wrap--cabinet wrap--onboarding{% endblock %}
 
 {% block header %}
-<header class="header header--cabinet">
+<header class="header header--cabinet header--onboarding">
   <div class="brand">
     <div class="brand-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -12,7 +12,7 @@
       </svg>
     </div>
     <div>
-      <p class="brand-label">Первый запуск</p>
+      <p class="brand-label">Настройка</p>
       <h1>{{ brand_name }}</h1>
     </div>
   </div>
@@ -21,216 +21,187 @@
 
 {% block content %}
 {% if request.query_params.get('err') %}
-<div class="alert alert-error">{{ request.query_params.get('err') }}</div>
+<div class="alert alert-error ob-alert">{{ request.query_params.get('err') }}</div>
 {% endif %}
 
-{% set current_step = 2 if device_count > 0 else 1 %}
+{% set ob_step = onboarding_step %}
+{% set d = devices[0] if devices else none %}
 
-<main class="stack cabinet onboarding-page">
-  <p class="onboarding-intro">
-    Привет, <strong>{{ display_name }}</strong>! Сейчас настроим первое подключение.
-    На балансе <strong>{{ "%.0f"|format(user.balance_rub) }} ₽</strong> (~{{ days_left }} дн.) — этого хватит на пробный период.
-  </p>
+<main class="onboarding-flow" data-initial-step="{{ ob_step }}">
+  <div class="ob-progress" aria-hidden="true">
+    <div class="ob-progress-dot{% if ob_step >= 1 %} is-active{% endif %}{% if ob_step > 1 %} is-done{% endif %}" data-step="1">1</div>
+    <div class="ob-progress-line{% if ob_step > 1 %} is-done{% endif %}"></div>
+    <div class="ob-progress-dot{% if ob_step >= 2 %} is-active{% endif %}{% if ob_step > 2 %} is-done{% endif %}" data-step="2">2</div>
+    <div class="ob-progress-line{% if ob_step > 2 %} is-done{% endif %}"></div>
+    <div class="ob-progress-dot{% if ob_step >= 3 %} is-active{% endif %}" data-step="3">3</div>
+  </div>
 
-  <section class="wizard" id="connect" aria-labelledby="wizard-title">
-    <div class="wizard-head">
-      <h2 class="wizard-title" id="wizard-title">Подключите интернет за 3 шага</h2>
-      <p class="wizard-sub">Делайте по порядку. После настройки откроется личный кабинет с балансом и устройствами.</p>
-    </div>
+  <div class="ob-screens">
 
-    <div class="wizard-track" aria-hidden="true">
-      <div class="wizard-track-step{% if current_step >= 1 %} is-active{% endif %}{% if current_step > 1 %} is-done{% endif %}">
-        <span class="wizard-track-num">1</span>
-        <span class="wizard-track-label">Устройство</span>
-      </div>
-      <div class="wizard-track-line{% if current_step > 1 %} is-done{% endif %}"></div>
-      <div class="wizard-track-step{% if current_step >= 2 %} is-active{% endif %}">
-        <span class="wizard-track-num">2</span>
-        <span class="wizard-track-label">Ключ / файл</span>
-      </div>
-      <div class="wizard-track-line{% if current_step > 2 %} is-done{% endif %}"></div>
-      <div class="wizard-track-step{% if current_step >= 2 %} is-active{% endif %}">
-        <span class="wizard-track-num">3</span>
-        <span class="wizard-track-label">Приложение</span>
-      </div>
-    </div>
+    {# ── Экран 1: выбор устройства ── #}
+    <section class="ob-screen{% if ob_step == 1 %} is-active{% endif %}" data-step="1" aria-label="Шаг 1">
+      <div class="ob-screen-inner">
+        <h2 class="ob-title">Какое у вас устройство?</h2>
+        <p class="ob-lead">Выберите платформу — создадим настройки на сервере.</p>
+        <p class="ob-meta">Привет, {{ display_name }} · на балансе {{ "%.0f"|format(user.balance_rub) }} ₽ (~{{ days_left }} дн.)</p>
 
-    <div class="wizard-block{% if device_count == 0 %} wizard-block--now{% else %} wizard-block--done{% endif %}" id="step-add">
-      <div class="wizard-block-head">
-        <span class="wizard-block-badge">Шаг 1</span>
-        {% if device_count > 0 %}
-        <span class="wizard-block-status">✓ Готово</span>
-        {% else %}
-        <span class="wizard-block-status wizard-block-status--now">Начните здесь</span>
-        {% endif %}
-      </div>
-      <h3 class="wizard-block-title">Какое у вас устройство?</h3>
-      <p class="wizard-block-desc">Нажмите на свою платформу — мы создадим настройки на сервере.</p>
-
-      <form method="post" action="{{ cabinet_base }}/devices/add" class="platform-cards">
-        <button class="platform-card" type="submit" name="platform" value="android">
-          <span class="platform-card-icon">📱</span>
-          <span class="platform-card-body">
-            <strong>Android</strong>
-            <span>Amnezia → ключ</span>
-          </span>
-          <span class="platform-card-action">Выбрать</span>
-        </button>
-        <button class="platform-card" type="submit" name="platform" value="ios">
-          <span class="platform-card-icon">🍎</span>
-          <span class="platform-card-body">
-            <strong>iPhone / iPad</strong>
-            <span>AmneziaWG → файл</span>
-          </span>
-          <span class="platform-card-action">Выбрать</span>
-        </button>
-        <button class="platform-card" type="submit" name="platform" value="windows">
-          <span class="platform-card-icon">🖥</span>
-          <span class="platform-card-body">
-            <strong>Windows</strong>
-            <span>Amnezia → ключ</span>
-          </span>
-          <span class="platform-card-action">Выбрать</span>
-        </button>
-        <button class="platform-card" type="submit" name="platform" value="mac">
-          <span class="platform-card-icon">💻</span>
-          <span class="platform-card-body">
-            <strong>Mac</strong>
-            <span>AmneziaWG → файл</span>
-          </span>
-          <span class="platform-card-action">Выбрать</span>
-        </button>
-      </form>
-    </div>
-
-    <div class="wizard-block{% if device_count > 0 %} wizard-block--now{% else %} wizard-block--locked{% endif %}" id="step-connect">
-      <div class="wizard-block-head">
-        <span class="wizard-block-badge">Шаг 2 и 3</span>
-        {% if device_count > 0 %}
-        <span class="wizard-block-status wizard-block-status--now">Сейчас здесь</span>
-        {% else %}
-        <span class="wizard-block-status">После шага 1</span>
-        {% endif %}
-      </div>
-      <h3 class="wizard-block-title">Подключите в приложении</h3>
-      <p class="wizard-block-desc">Скопируйте ключ или скачайте файл, затем вставьте в приложение.</p>
-
-      {% if devices %}
-      {% for d in devices %}
-      {% set use_conf = d.platform in ['ios', 'mac'] %}
-      {% set icon = '📱' if d.platform in ['android', 'ios'] else ('🖥' if d.platform == 'windows' else '💻') %}
-      <article class="device-sheet">
-        <header class="device-sheet-head">
-          <span class="device-sheet-icon">{{ icon }}</span>
-          <div class="device-sheet-meta">
-            <strong>{{ d.name or platform_label(d.platform) }}</strong>
-            <span>{{ platform_label(d.platform) }}</span>
-          </div>
-        </header>
-
-        {% if use_conf %}
-        <div class="device-action">
-          <p class="device-action-label">Шаг 2 — скачайте файл</p>
-          <a class="btn btn-hero btn-hero--download" href="{{ cabinet_base }}/devices/{{ d.id }}/conf">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Скачать файл для AmneziaWG
-          </a>
-        </div>
-        <ol class="instruction-list">
-          <li><a href="{{ amnezia_wg_apple }}" target="_blank" rel="noopener">Скачайте AmneziaWG</a>, если ещё нет</li>
-          <li>Нажмите зелёную кнопку — сохраните файл</li>
-          <li>В приложении: <strong>«Добавить туннель»</strong> → <strong>«Из файла»</strong></li>
-          <li>Нажмите <strong>«Подключить»</strong></li>
-        </ol>
-        {% else %}
-        <div class="device-action">
-          <p class="device-action-label">Шаг 2 — скопируйте ключ</p>
-          <textarea class="key-box-hidden" id="key{{ d.id }}" readonly aria-hidden="true">{{ d.vpn_link | branded_vpn_link(d.panel_server_id) }}</textarea>
-          <button type="button" class="btn btn-hero copy-btn" data-target="key{{ d.id }}">
-            <svg class="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            <svg class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="display:none">
-              <path d="M20 6 9 17l-5-5"/>
-            </svg>
-            <span class="copy-btn-text">Скопировать ключ для Amnezia</span>
-            <span class="copy-btn-done" hidden>Скопировано ✓</span>
+        <form method="post" action="{{ cabinet_base }}/devices/add" class="platform-cards ob-platforms">
+          <button class="platform-card" type="submit" name="platform" value="android">
+            <span class="platform-card-icon">📱</span>
+            <span class="platform-card-body"><strong>Android</strong><span>Amnezia → ключ</span></span>
+            <span class="platform-card-action">→</span>
           </button>
-        </div>
-        <ol class="instruction-list">
-          <li><a href="{{ amnezia_android }}" target="_blank" rel="noopener">Скачайте Amnezia</a>, если ещё нет</li>
-          <li>Нажмите зелёную кнопку — ключ скопируется</li>
-          <li>В приложении: <strong>➕</strong> → <strong>«Вставить ключ»</strong></li>
-          <li>Нажмите <strong>«Подключить»</strong></li>
-        </ol>
-        {% endif %}
-      </article>
-      {% endfor %}
-
-      <div class="onboarding-finish">
-        <p class="onboarding-finish-text">Интернет заработал в приложении?</p>
-        <form method="post" action="{{ onboarding_base }}/complete">
-          <button type="submit" class="btn btn-hero btn-hero--finish">
-            Да, всё работает — открыть личный кабинет
+          <button class="platform-card" type="submit" name="platform" value="ios">
+            <span class="platform-card-icon">🍎</span>
+            <span class="platform-card-body"><strong>iPhone / iPad</strong><span>AmneziaWG → файл</span></span>
+            <span class="platform-card-action">→</span>
+          </button>
+          <button class="platform-card" type="submit" name="platform" value="windows">
+            <span class="platform-card-icon">🖥</span>
+            <span class="platform-card-body"><strong>Windows</strong><span>Amnezia → ключ</span></span>
+            <span class="platform-card-action">→</span>
+          </button>
+          <button class="platform-card" type="submit" name="platform" value="mac">
+            <span class="platform-card-icon">💻</span>
+            <span class="platform-card-body"><strong>Mac</strong><span>AmneziaWG → файл</span></span>
+            <span class="platform-card-action">→</span>
           </button>
         </form>
-        <p class="onboarding-finish-hint">В кабинете будет баланс, список устройств и кнопка «добавить ещё».</p>
       </div>
-      {% else %}
-      <div class="wizard-placeholder">
-        <span class="wizard-placeholder-icon">👆</span>
-        <p>Сначала выберите устройство в <strong>шаге 1</strong>.</p>
+    </section>
+
+    {# ── Экран 2: ключ или файл ── #}
+    <section class="ob-screen{% if ob_step == 2 %} is-active{% endif %}" data-step="2" aria-label="Шаг 2">
+      <div class="ob-screen-inner">
+        {% if d %}
+        {% set use_conf = d.platform in ['ios', 'mac'] %}
+        {% set icon = '📱' if d.platform in ['android', 'ios'] else ('🖥' if d.platform == 'windows' else '💻') %}
+        <p class="ob-device-badge">{{ icon }} {{ platform_label(d.platform) }}</p>
+        <h2 class="ob-title">{% if use_conf %}Скачайте файл{% else %}Скопируйте ключ{% endif %}</h2>
+        <p class="ob-lead">{% if use_conf %}Сохраните файл и откройте в AmneziaWG{% else %}Нажмите кнопку — ключ скопируется{% endif %}</p>
+
+        {% if use_conf %}
+        <a class="btn btn-hero btn-hero--download ob-main-action" href="{{ cabinet_base }}/devices/{{ d.id }}/conf">
+          Скачать файл настроек
+        </a>
+        <ul class="ob-tips">
+          <li><a href="{{ amnezia_wg_apple }}" target="_blank" rel="noopener">AmneziaWG</a> → «Добавить туннель» → «Из файла»</li>
+          <li>Нажмите <strong>Подключить</strong></li>
+        </ul>
+        {% else %}
+        <textarea class="key-box-hidden" id="key{{ d.id }}" readonly aria-hidden="true">{{ d.vpn_link | branded_vpn_link(d.panel_server_id) }}</textarea>
+        <button type="button" class="btn btn-hero ob-main-action copy-btn" data-target="key{{ d.id }}">
+          <svg class="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          <svg class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="display:none">
+            <path d="M20 6 9 17l-5-5"/>
+          </svg>
+          <span class="copy-btn-text">Скопировать ключ</span>
+          <span class="copy-btn-done" hidden>Скопировано ✓</span>
+        </button>
+        <ul class="ob-tips">
+          {% if d.platform == 'windows' %}
+          <li><a href="{{ amnezia_windows }}" target="_blank" rel="noopener">Скачайте Amnezia</a> для Windows</li>
+          {% else %}
+          <li><a href="{{ amnezia_android }}" target="_blank" rel="noopener">Скачайте Amnezia</a> из Google Play</li>
+          {% endif %}
+          <li>➕ → «Вставить ключ» → <strong>Подключить</strong></li>
+        </ul>
+        {% endif %}
+
+        <div class="ob-nav">
+          <button type="button" class="btn btn-secondary ob-nav-back" data-goto-step="1" hidden>← Назад</button>
+          <button type="button" class="btn btn-block ob-nav-next" data-goto-step="3">Подключил — далее →</button>
+        </div>
+        {% endif %}
       </div>
-      {% endif %}
-    </div>
-  </section>
+    </section>
+
+    {# ── Экран 3: готово → ЛК ── #}
+    <section class="ob-screen{% if ob_step == 3 %} is-active{% endif %}" data-step="3" aria-label="Шаг 3">
+      <div class="ob-screen-inner ob-screen-inner--center">
+        <div class="ob-success-icon" aria-hidden="true">✓</div>
+        <h2 class="ob-title">Готово!</h2>
+        <p class="ob-lead">Если интернет в приложении работает — открывайте личный кабинет. Там баланс, устройства и добавление новых.</p>
+
+        <form method="post" action="{{ onboarding_base }}/complete" class="ob-finish-form">
+          <button type="submit" class="btn btn-hero btn-hero--finish ob-main-action">
+            Открыть личный кабинет
+          </button>
+        </form>
+
+        <button type="button" class="btn btn-secondary btn-block ob-back-link" data-goto-step="2">← Вернуться к ключу</button>
+      </div>
+    </section>
+
+  </div>
 </main>
 {% endblock %}
 
+{% block site_footer %}{% endblock %}
+
 {% block scripts %}
 <script>
-async function copyKey(id, btn) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const text = (el.value || el.innerText || '').trim();
-  const iconCopy = btn.querySelector('.icon-copy');
-  const iconCheck = btn.querySelector('.icon-check');
-  const textEl = btn.querySelector('.copy-btn-text');
-  const doneEl = btn.querySelector('.copy-btn-done');
+(function () {
+  const flow = document.querySelector('.onboarding-flow');
+  if (!flow) return;
 
-  function showOk() {
-    btn.classList.add('copied');
-    if (iconCopy) iconCopy.style.display = 'none';
-    if (iconCheck) iconCheck.style.display = 'block';
-    if (textEl) textEl.hidden = true;
-    if (doneEl) doneEl.hidden = false;
-    setTimeout(() => {
-      btn.classList.remove('copied');
-      if (iconCopy) iconCopy.style.display = 'block';
-      if (iconCheck) iconCheck.style.display = 'none';
-      if (textEl) textEl.hidden = false;
-      if (doneEl) doneEl.hidden = true;
-    }, 2500);
+  function setStep(n) {
+    flow.querySelectorAll('.ob-screen').forEach((el) => {
+      el.classList.toggle('is-active', parseInt(el.dataset.step, 10) === n);
+    });
+    flow.querySelectorAll('.ob-progress-dot').forEach((el) => {
+      const s = parseInt(el.dataset.step, 10);
+      el.classList.toggle('is-active', s === n);
+      el.classList.toggle('is-done', s < n);
+    });
+    flow.querySelectorAll('.ob-progress-line').forEach((el, i) => {
+      el.classList.toggle('is-done', i < n - 1);
+    });
+    flow.dataset.currentStep = String(n);
   }
 
-  if (navigator.clipboard && window.isSecureContext) {
-    try { await navigator.clipboard.writeText(text); showOk(); return; } catch (e) {}
+  setStep(parseInt(flow.dataset.initialStep || '1', 10));
+
+  flow.querySelectorAll('[data-goto-step]').forEach((btn) => {
+    btn.addEventListener('click', () => setStep(parseInt(btn.dataset.gotoStep, 10)));
+  });
+
+  async function copyKey(id, btn) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const text = (el.value || '').trim();
+    const iconCopy = btn.querySelector('.icon-copy');
+    const iconCheck = btn.querySelector('.icon-check');
+    const textEl = btn.querySelector('.copy-btn-text');
+    const doneEl = btn.querySelector('.copy-btn-done');
+    function showOk() {
+      btn.classList.add('copied');
+      if (iconCopy) iconCopy.style.display = 'none';
+      if (iconCheck) iconCheck.style.display = 'block';
+      if (textEl) textEl.hidden = true;
+      if (doneEl) doneEl.hidden = false;
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        if (iconCopy) iconCopy.style.display = 'block';
+        if (iconCheck) iconCheck.style.display = 'none';
+        if (textEl) textEl.hidden = false;
+        if (doneEl) doneEl.hidden = true;
+      }, 2500);
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      try { await navigator.clipboard.writeText(text); showOk(); return; } catch (e) {}
+    }
+    try {
+      el.focus(); el.select();
+      if (document.execCommand('copy')) showOk();
+    } catch (e) {}
   }
-  try {
-    if (el.select) { el.focus(); el.select(); el.setSelectionRange(0, text.length); }
-    if (document.execCommand('copy')) { showOk(); return; }
-  } catch (e) {}
-  alert('Не удалось скопировать. Выделите текст вручную и нажмите Ctrl+C');
-}
 
-document.querySelectorAll('.copy-btn').forEach((btn) => {
-  btn.addEventListener('click', () => copyKey(btn.dataset.target, btn));
-});
-
-if (location.hash === '#connect') {
-  document.getElementById('connect')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
+  flow.querySelectorAll('.copy-btn').forEach((btn) => {
+    btn.addEventListener('click', () => copyKey(btn.dataset.target, btn));
+  });
+})();
 </script>
 {% endblock %}
