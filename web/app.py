@@ -34,8 +34,8 @@ from bot.services.users import (
 
 from bot.services.freekassa import (
     FreekassaApiError,
-    FREEKASSA_METHOD_CARD,
     FREEKASSA_METHOD_SBP,
+    FREEKASSA_PAY_METHODS,
     create_payment_order,
     get_client_ip,
     is_freekassa_ip,
@@ -465,7 +465,7 @@ async def _cabinet_pay_submit(
     if not settings.freekassa_enabled:
         return RedirectResponse(f"{pay_base}/pay", status_code=303)
 
-    if pay_method not in (FREEKASSA_METHOD_SBP, FREEKASSA_METHOD_CARD):
+    if pay_method not in FREEKASSA_PAY_METHODS:
         return RedirectResponse(f"{pay_base}/pay?error=method", status_code=303)
 
     amount = settings.price_for_days(days)
@@ -623,13 +623,31 @@ async def payment_notify(request: Request, session: AsyncSession = Depends(get_d
     return PlainTextResponse("YES")
 
 
+def _payment_return_path(user: User, *, via_session: bool, outcome: str) -> str:
+    """After Freekassa return: users still in onboarding land on /pay, not /cabinet."""
+    query = f"?paid={outcome}"
+    if needs_onboarding(user):
+        if via_session:
+            return f"/cabinet/pay{query}"
+        return f"/cabinet/{user.cabinet_token}/pay{query}"
+    if via_session:
+        return f"/cabinet{query}"
+    return f"/cabinet/{user.cabinet_token}{query}"
+
+
 @app.get("/payment/success", response_class=HTMLResponse)
 async def payment_success(request: Request, session: AsyncSession = Depends(get_db)):
     user = await get_user_from_session(request, session)
     if user:
-        return RedirectResponse("/cabinet?paid=ok", status_code=303)
+        return RedirectResponse(_payment_return_path(user, via_session=True, outcome="ok"), status_code=303)
     token = await _resolve_cabinet_token(request, session)
     if token:
+        user = await get_user_by_cabinet_token(session, token)
+        if user:
+            return RedirectResponse(
+                _payment_return_path(user, via_session=False, outcome="ok"),
+                status_code=303,
+            )
         return RedirectResponse(f"/cabinet/{token}?paid=ok", status_code=303)
     return templates.TemplateResponse(
         request,
@@ -655,9 +673,15 @@ async def payment_fail(request: Request, session: AsyncSession = Depends(get_db)
 
     user = await get_user_from_session(request, session)
     if user:
-        return RedirectResponse("/cabinet?paid=fail", status_code=303)
+        return RedirectResponse(_payment_return_path(user, via_session=True, outcome="fail"), status_code=303)
     token = await _resolve_cabinet_token(request, session)
     if token:
+        user = await get_user_by_cabinet_token(session, token)
+        if user:
+            return RedirectResponse(
+                _payment_return_path(user, via_session=False, outcome="fail"),
+                status_code=303,
+            )
         return RedirectResponse(f"/cabinet/{token}?paid=fail", status_code=303)
     return templates.TemplateResponse(
         request,

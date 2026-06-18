@@ -43,7 +43,7 @@
       <div class="ob-screen-inner">
         <h2 class="ob-title">Какое у вас устройство?</h2>
         <p class="ob-lead">Выберите платформу — создадим настройки на сервере.</p>
-        <p class="ob-meta">Привет, {{ display_name }} · на балансе {{ "%.0f"|format(user.balance_rub) }} ₽ (~{{ days_left }} дн.)</p>
+        <p class="ob-meta">Привет, {{ display_name }} · на балансе {{ "%.0f"|format(user.balance_rub) }} ₽ (~{{ days_left }} дн.) · <a href="{{ cabinet_base }}/pay">Пополнить</a></p>
 
         <form method="post" action="{{ cabinet_base }}/devices/add" class="platform-cards ob-platforms">
           <button class="platform-card" type="submit" name="platform" value="android">
