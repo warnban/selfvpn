@@ -2422,7 +2422,16 @@ label {
   margin-bottom: 8px;
 }
 
-@media (max-height: 700px) {
+.email-verify-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.email-verify-block .alert {
+  margin-bottom: 0;
+}
+
   .ob-screens { min-height: 360px; }
   .ob-screen-inner { min-height: 320px; padding: 18px 16px; }
   .platform-card { padding: 12px; }

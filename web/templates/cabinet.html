@@ -39,7 +39,9 @@
 {% if request.query_params.get('verified') == '1' %}
 <div class="alert alert-success">Email подтверждён!</div>
 {% endif %}
-{% if user.email and not user.email_verified %}
+{% if requires_email_verification %}
+{% include "_email_verify_required.html" %}
+{% elif user.email and not user.email_verified %}
 <div class="alert alert-error">Подтвердите email — проверьте почту и «Спам».</div>
 <form method="post" action="/auth/resend-verification" class="resend-verify-form">
   <input type="hidden" name="cabinet_token" value="{{ user.cabinet_token }}">
@@ -147,6 +149,9 @@
     <div class="lk-add" id="add-device">
       <h3 class="lk-add-title">➕ Добавить устройство</h3>
       <p class="lk-add-desc">{{ "%.0f"|format(daily_price) }} ₽/сутки за каждое новое</p>
+      {% if requires_email_verification %}
+      {% include "_email_verify_required.html" %}
+      {% else %}
       <form method="post" action="{{ cabinet_base }}/devices/add" class="platform-cards platform-cards--compact js-device-add-form">
         <button class="platform-card platform-card--compact" type="submit" name="platform" value="android">
           <span class="platform-card-icon">📱</span>
@@ -165,6 +170,7 @@
           <span class="platform-card-body"><strong>Mac</strong></span>
         </button>
       </form>
+      {% endif %}
     </div>
     {% else %}
     <p class="muted lk-limit">Лимит {{ max_devices }} устройств. Удалите одно, чтобы добавить новое.</p>

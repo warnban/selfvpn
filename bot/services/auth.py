@@ -76,6 +76,15 @@ def user_display_name(user: User) -> str:
     )
 
 
+def requires_email_verification_for_device(user: User) -> bool:
+    """Web-registered users must verify email before VPN keys can be created."""
+    if user.email_verified:
+        return False
+    if user.telegram_id and user.auth_provider == "telegram":
+        return False
+    return True
+
+
 async def register_web_user(
     session: AsyncSession,
     email: str,

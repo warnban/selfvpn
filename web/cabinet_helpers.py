@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
 from bot.database.models import User
-from bot.services.auth import user_display_name
+from bot.services.auth import user_display_name, requires_email_verification_for_device
 from bot.services.devices import (
     count_devices,
     days_left_for,
@@ -111,6 +111,7 @@ async def build_cabinet_context(
         "via_session": via_session,
         "has_password": bool(user.password_hash),
         "has_telegram": bool(user.telegram_id),
+        "requires_email_verification": requires_email_verification_for_device(user),
         "login_url": settings.login_url(),
         "register_url": settings.register_url(),
     }

@@ -41,10 +41,13 @@
     {# ── Экран 1: выбор устройства ── #}
     <section class="ob-screen{% if ob_step == 1 %} is-active{% endif %}" data-step="1" aria-label="Шаг 1">
       <div class="ob-screen-inner">
-        <h2 class="ob-title">Какое у вас устройство?</h2>
-        <p class="ob-lead">Выберите платформу — создадим настройки на сервере.</p>
+        <h2 class="ob-title">{% if requires_email_verification %}Подтвердите email{% else %}Какое у вас устройство?{% endif %}</h2>
+        <p class="ob-lead">{% if requires_email_verification %}После подтверждения сможете выбрать устройство и получить ключ{% else %}Выберите платформу — создадим настройки на сервере.{% endif %}</p>
         <p class="ob-meta">Привет, {{ display_name }} · на балансе {{ "%.0f"|format(user.balance_rub) }} ₽ (~{{ days_left }} дн.) · <a href="{{ cabinet_base }}/pay">Пополнить</a></p>
 
+{% if requires_email_verification %}
+{% include "_email_verify_required.html" %}
+{% else %}
         <form method="post" action="{{ cabinet_base }}/devices/add" class="platform-cards ob-platforms js-device-add-form">
           <button class="platform-card" type="submit" name="platform" value="android">
             <span class="platform-card-icon">📱</span>
@@ -67,6 +70,7 @@
             <span class="platform-card-action">→</span>
           </button>
         </form>
+{% endif %}
       </div>
     </section>
 

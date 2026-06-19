@@ -67,6 +67,13 @@ async def add_device(
     platform: str,
     name: str | None = None,
 ) -> Device:
+    from bot.services.auth import requires_email_verification_for_device
+
+    if requires_email_verification_for_device(user):
+        raise ValueError(
+            "Подтвердите email — проверьте почту и папку «Спам», затем создайте ключ снова."
+        )
+
     current = await list_devices(session, user)
 
     if len(current) >= settings.max_devices:

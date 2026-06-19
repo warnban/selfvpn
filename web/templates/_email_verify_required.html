@@ -1,0 +1,10 @@
+<div class="email-verify-block">
+  <div class="alert alert-error">
+    Подтвердите email, чтобы создать ключ подключения. Письмо отправлено на <strong>{{ user.email }}</strong> — проверьте «Спам».
+  </div>
+  <form method="post" action="/auth/resend-verification" class="resend-verify-form">
+    <input type="hidden" name="cabinet_token" value="{{ user.cabinet_token }}">
+    <input type="hidden" name="next_url" value="{{ request.url.path }}">
+    <button type="submit" class="btn btn-secondary btn-block">Отправить письмо повторно</button>
+  </form>
+</div>
