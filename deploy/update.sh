@@ -25,6 +25,8 @@ fi
 echo "==> веб systemd"
 [ -d venv ] || python3 -m venv venv
 ./venv/bin/pip install -q -r requirements.txt
+echo "==> проверка импорта web.app"
+./venv/bin/python -c "from web.app import app" || { echo "FAIL: web.app не импортируется"; exit 1; }
 if [ -f deploy/selfvpn-web.service ]; then
   cp deploy/selfvpn-web.service /etc/systemd/system/selfvpn-web.service
 fi
