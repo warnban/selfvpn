@@ -122,19 +122,21 @@
         <a class="btn btn-secondary btn-block lk-action-btn" href="{{ cabinet_base }}/devices/{{ d.id }}/conf">
           📄 Скачать файл настроек
         </a>
-        <p class="lk-device-hint">AmneziaWG → «Добавить туннель» → «Из файла»</p>
+        <ul class="device-app-hint lk-device-hint">
+          {% with platform=d.platform, use_conf=true %}
+          {% include "_device_app_hint.html" %}
+          {% endwith %}
+        </ul>
         {% else %}
         <textarea class="key-box-hidden" id="key{{ d.id }}" readonly aria-hidden="true">{{ d.vpn_link | branded_vpn_link(d.panel_server_id) }}</textarea>
         <button type="button" class="btn btn-secondary btn-block lk-action-btn copy-btn" data-target="key{{ d.id }}">
           🔑 Скопировать ключ
         </button>
-        <p class="lk-device-hint">
-          {% if d.platform == 'windows' %}
-          <a href="{{ amnezia_windows }}" target="_blank" rel="noopener">Скачать Amnezia для Windows</a> → ➕ → «Вставить ключ» → Подключить
-          {% else %}
-          <a href="{{ amnezia_android }}" target="_blank" rel="noopener">Скачать Amnezia</a> → ➕ → «Вставить ключ» → Подключить
-          {% endif %}
-        </p>
+        <ul class="device-app-hint lk-device-hint">
+          {% with platform=d.platform, use_conf=false %}
+          {% include "_device_app_hint.html" %}
+          {% endwith %}
+        </ul>
         {% endif %}
       </div>
     </article>

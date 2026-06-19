@@ -92,8 +92,9 @@
           Скачать файл настроек
         </a>
         <ul class="ob-tips">
-          <li><a href="{{ amnezia_wg_apple }}" target="_blank" rel="noopener">AmneziaWG</a> → «Добавить туннель» → «Из файла»</li>
-          <li>Нажмите <strong>Подключить</strong></li>
+          {% with platform=d.platform, use_conf=true %}
+          {% include "_device_app_hint.html" %}
+          {% endwith %}
         </ul>
         {% else %}
         <textarea class="key-box-hidden" id="key{{ d.id }}" readonly aria-hidden="true">{{ d.vpn_link | branded_vpn_link(d.panel_server_id) }}</textarea>
@@ -108,12 +109,9 @@
           <span class="copy-btn-done" hidden>Скопировано ✓</span>
         </button>
         <ul class="ob-tips">
-          {% if d.platform == 'windows' %}
-          <li><a href="{{ amnezia_windows }}" target="_blank" rel="noopener">Скачайте Amnezia</a> для Windows</li>
-          {% else %}
-          <li><a href="{{ amnezia_android }}" target="_blank" rel="noopener">Скачайте Amnezia</a> из Google Play</li>
-          {% endif %}
-          <li>➕ → «Вставить ключ» → <strong>Подключить</strong></li>
+          {% with platform=d.platform, use_conf=false %}
+          {% include "_device_app_hint.html" %}
+          {% endwith %}
         </ul>
         {% endif %}
 

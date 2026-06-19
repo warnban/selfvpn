@@ -2155,6 +2155,27 @@ label {
   text-align: center;
 }
 
+.device-app-hint {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.device-app-hint a {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.device-app-hint strong {
+  color: var(--text);
+}
+
 .lk-action-btn { font-size: 0.875rem; }
 
 .lk-empty {

@@ -44,6 +44,13 @@ from bot.services.freekassa import (
     verify_notification_signature,
 )
 from bot.services.auth import user_display_name, admin_user_subtitle
+from bot.messages import (
+    AMNEZIA_ANDROID,
+    AMNEZIA_WINDOWS,
+    AMNEZIA_WG_APPLE,
+    app_download_label,
+    app_download_url,
+)
 from bot.services.vpn_config import safe_conf_filename
 from web.auth_routes import router as auth_router
 from web.cabinet_helpers import (
@@ -93,6 +100,8 @@ templates.env.globals["support_tg_url"] = settings.support_tg_url()
 templates.env.globals["amnezia_android"] = AMNEZIA_ANDROID
 templates.env.globals["amnezia_windows"] = AMNEZIA_WINDOWS
 templates.env.globals["amnezia_wg_apple"] = AMNEZIA_WG_APPLE
+templates.env.globals["app_download_url"] = app_download_url
+templates.env.globals["app_download_label"] = app_download_label
 templates.env.globals["platform_label"] = platform_label
 templates.env.globals["user_display_name"] = user_display_name
 templates.env.globals["admin_user_subtitle"] = admin_user_subtitle

@@ -11,6 +11,22 @@ AMNEZIA_IOS = AMNEZIA_WG_APPLE
 AMNEZIA_SITE = "https://amnezia.org"
 
 
+def app_download_url(platform: str) -> str:
+    if platform in ("ios", "mac"):
+        return AMNEZIA_WG_APPLE
+    if platform == "windows":
+        return AMNEZIA_WINDOWS
+    return AMNEZIA_ANDROID
+
+
+def app_download_label(platform: str) -> str:
+    if platform in ("ios", "mac"):
+        return "Скачать AmneziaWG (App Store)"
+    if platform == "windows":
+        return "Скачать Amnezia для Windows"
+    return "Скачать Amnezia (Google Play)"
+
+
 def _steps_key_android() -> str:
     return (
         "1️⃣ Скачай <a href=\"{android}\">Amnezia</a> из Google Play\n"

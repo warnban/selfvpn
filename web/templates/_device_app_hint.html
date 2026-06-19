@@ -1,0 +1,9 @@
+{# platform, use_conf — list items for download + connect steps #}
+<li>
+  <a href="{{ app_download_url(platform) }}" target="_blank" rel="noopener">{{ app_download_label(platform) }}</a>
+</li>
+{% if use_conf %}
+<li>«Добавить туннель» → «Из файла» → <strong>Подключить</strong></li>
+{% else %}
+<li>➕ → «Вставить ключ» → <strong>Подключить</strong></li>
+{% endif %}
