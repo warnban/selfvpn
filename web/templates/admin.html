@@ -162,7 +162,7 @@
       <div>
         <div class="user-name">Заявка #{{ p.id }}</div>
         <div class="user-meta">
-          {% if pu and pu.username %}@{{ pu.username }}{% elif pu %}ID {{ pu.telegram_id }}{% endif %}
+          {% if pu %}{{ user_display_name(pu) }} · {{ admin_user_subtitle(pu) }}{% endif %}
           · {{ p.source }} · {{ p.days_purchased or '?' }} дн.
         </div>
       </div>
@@ -194,7 +194,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
       </svg>
-      <input type="text" class="search-input" id="userSearch" placeholder="Поиск по юзернейму..." autocomplete="off">
+      <input type="text" class="search-input" id="userSearch" placeholder="Поиск по имени, email, @username..." autocomplete="off">
     </div>
   </div>
 
@@ -212,9 +212,9 @@
       <tbody>
         {% for u in users %}
         {% set dc = device_counts.get(u.id, 0) %}
-        {% set display = u.first_name or '—' %}
-        {% set handle = ('@' ~ u.username) if u.username else ('ID ' ~ u.telegram_id) %}
-        {% set search_text = (handle ~ ' ' ~ display)|lower %}
+        {% set display = user_display_name(u) %}
+        {% set handle = admin_user_subtitle(u) %}
+        {% set search_text = (display ~ ' ' ~ handle ~ ' ' ~ (u.email or '') ~ ' ' ~ (u.username or ''))|lower %}
         {% if dc > 0 and u.balance_rub > 0 %}
           {% set status_label = 'Активен' %}
           {% set status_class = 'badge-ok' %}
@@ -229,7 +229,7 @@
           <td>
             <div class="user-cell">
               <div class="user-avatar" style="background:rgba(124,110,245,0.12);color:#7c6ef5">
-                {{ (display[0] if display != '—' else '?')|upper }}
+                {{ display[0]|upper }}
               </div>
               <div>
                 <div class="user-display">{{ display }}</div>
@@ -252,7 +252,7 @@
             </span>
           </td>
           <td>
-            <button type="button" class="btn-credit" data-user-id="{{ u.id }}" data-user-handle="{{ handle }}" data-user-balance="{{ u.balance_rub|int }}">
+            <button type="button" class="btn-credit" data-user-id="{{ u.id }}" data-user-handle="{{ display }} · {{ handle }}" data-user-balance="{{ u.balance_rub|int }}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
               Баланс
             </button>

@@ -43,7 +43,7 @@ from bot.services.freekassa import (
     resolve_payment_client_ip,
     verify_notification_signature,
 )
-from bot.messages import AMNEZIA_ANDROID, AMNEZIA_WINDOWS, AMNEZIA_WG_APPLE
+from bot.services.auth import user_display_name, admin_user_subtitle
 from bot.services.vpn_config import safe_conf_filename
 from web.auth_routes import router as auth_router
 from web.cabinet_helpers import (
@@ -94,6 +94,8 @@ templates.env.globals["amnezia_android"] = AMNEZIA_ANDROID
 templates.env.globals["amnezia_windows"] = AMNEZIA_WINDOWS
 templates.env.globals["amnezia_wg_apple"] = AMNEZIA_WG_APPLE
 templates.env.globals["platform_label"] = platform_label
+templates.env.globals["user_display_name"] = user_display_name
+templates.env.globals["admin_user_subtitle"] = admin_user_subtitle
 templates.env.globals["max_devices"] = settings.max_devices
 templates.env.globals["support_phone_tel"] = "89169046701"
 templates.env.globals["support_phone_display"] = "+7 (916) 904-67-01"

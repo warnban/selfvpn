@@ -76,6 +76,20 @@ def user_display_name(user: User) -> str:
     )
 
 
+def admin_user_subtitle(user: User) -> str:
+    """Secondary line in admin lists: @username, email, or internal id."""
+    if user.username:
+        if user.email:
+            return f"@{user.username} · {user.email}"
+        return f"@{user.username}"
+    if user.email:
+        verified = " ✓" if user.email_verified else ""
+        return f"{user.email}{verified}"
+    if user.telegram_id:
+        return f"TG {user.telegram_id}"
+    return f"ID {user.id}"
+
+
 def requires_email_verification_for_device(user: User) -> bool:
     """Web-registered users must verify email before VPN keys can be created."""
     if user.email_verified:
