@@ -31,6 +31,16 @@
       const submitter = event.submitter;
       if (!submitter || submitter.name !== "platform") return;
 
+      // Disabled submit buttons are excluded from form data — store platform in a hidden field.
+      let field = form.querySelector('input[type="hidden"][name="platform"]');
+      if (!field) {
+        field = document.createElement("input");
+        field.type = "hidden";
+        field.name = "platform";
+        form.appendChild(field);
+      }
+      field.value = submitter.value;
+
       showOverlay(loadingMessage(submitter.value));
       form.querySelectorAll("button[type='submit']").forEach((btn) => {
         btn.disabled = true;

@@ -19,6 +19,15 @@ PLATFORM_LABELS = {
     "other": "🔌 Другое",
 }
 
+VALID_PLATFORMS = frozenset(PLATFORM_LABELS.keys())
+
+
+def normalize_platform(platform: str) -> str:
+    normalized = (platform or "").strip().lower()
+    if normalized in VALID_PLATFORMS:
+        return normalized
+    return "other"
+
 
 def platform_label(platform: str) -> str:
     return PLATFORM_LABELS.get(platform, PLATFORM_LABELS["other"])
@@ -88,6 +97,7 @@ async def add_device(
             f"минимум {required:.0f} ₽ на балансе (хватит на 1 сутки)."
         )
 
+    platform = normalize_platform(platform)
     label = name or platform_label(platform).split(" ", 1)[-1]
     if user.telegram_id:
         panel_name = f"tg{user.telegram_id}_{secrets.token_hex(3)}"
