@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     freekassa_secret_2: str = ""
     freekassa_client_ip_fallback: str = ""
 
+    # Cardlink. payment_provider выбирает активную онлайн-кассу: "freekassa" или "cardlink".
+    payment_provider: str = "freekassa"
+    cardlink_api_token: str = ""
+    cardlink_shop_id: str = ""
+
     smtp_host: str = ""
     smtp_port: int = 465
     smtp_user: str = ""
@@ -62,6 +67,24 @@ class Settings(BaseSettings):
             and self.freekassa_api_key
             and self.freekassa_secret_2
         )
+
+    @property
+    def cardlink_enabled(self) -> bool:
+        return bool(self.cardlink_api_token and self.cardlink_shop_id)
+
+    @property
+    def active_payment_provider(self) -> str:
+        """Какая онлайн-касса используется для веб-оплаты прямо сейчас."""
+        provider = (self.payment_provider or "freekassa").strip().lower()
+        if provider == "cardlink" and self.cardlink_enabled:
+            return "cardlink"
+        return "freekassa"
+
+    @property
+    def online_payment_enabled(self) -> bool:
+        if self.active_payment_provider == "cardlink":
+            return self.cardlink_enabled
+        return self.freekassa_enabled
 
     @property
     def admin_id_list(self) -> list[int]:
@@ -96,6 +119,21 @@ class Settings(BaseSettings):
 
     def payment_fail_url(self) -> str:
         return f"{self.web_base_url.rstrip('/')}/payment/fail"
+
+    def cardlink_success_url(self) -> str:
+        return f"{self.web_base_url.rstrip('/')}/cardlink/success"
+
+    def cardlink_fail_url(self) -> str:
+        return f"{self.web_base_url.rstrip('/')}/cardlink/fail"
+
+    def cardlink_result_url(self) -> str:
+        return f"{self.web_base_url.rstrip('/')}/cardlink/result"
+
+    def cardlink_refund_url(self) -> str:
+        return f"{self.web_base_url.rstrip('/')}/cardlink/refund"
+
+    def cardlink_chargeback_url(self) -> str:
+        return f"{self.web_base_url.rstrip('/')}/cardlink/chargeback"
 
     @property
     def support_tg_handle(self) -> str:

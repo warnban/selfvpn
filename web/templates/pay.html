@@ -38,7 +38,9 @@
     <select name="pay_method" id="pay_method" required>
       <option value="44">СБП (НСПК)</option>
       <option value="36">Банковская карта (РФ)</option>
+      {% if payment_provider != 'cardlink' %}
       <option value="12">Банковская карта МИР</option>
+      {% endif %}
     </select>
 
     {% if request.query_params.get('error') == 'api' %}
@@ -52,7 +54,7 @@
       <div class="label">К оплате</div>
     </div>
 
-    {% if freekassa_enabled %}
+    {% if online_payment_enabled %}
     <p class="muted" style="margin-bottom:20px">Сумма считается по тарифу {{ daily_price }} ₽/сутки. После оплаты баланс зачислится автоматически — без скриншотов и ожидания админа.</p>
     <button class="btn btn-block" type="submit">Оплатить</button>
     {% else %}

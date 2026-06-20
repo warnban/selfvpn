@@ -114,6 +114,29 @@ async def cancel_pending_freekassa_for_user(
     await session.commit()
 
 
+async def cancel_pending_cardlink_for_user(
+    session: AsyncSession,
+    user: User,
+    *,
+    comment: str = "Отменено — новая попытка оплаты",
+) -> None:
+    result = await session.execute(
+        select(Payment).where(
+            Payment.user_id == user.id,
+            Payment.status == PaymentStatus.PENDING.value,
+            Payment.source == "cardlink",
+        )
+    )
+    payments = list(result.scalars().all())
+    if not payments:
+        return
+    for payment in payments:
+        payment.status = PaymentStatus.REJECTED.value
+        payment.processed_at = datetime.utcnow()
+        payment.admin_comment = comment
+    await session.commit()
+
+
 async def cancel_pending_stars_for_user(
     session: AsyncSession,
     user: User,

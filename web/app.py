@@ -26,6 +26,7 @@ from bot.services.users import (
     approve_payment,
     create_payment_request,
     cancel_pending_freekassa_for_user,
+    cancel_pending_cardlink_for_user,
     get_user_by_cabinet_token,
     get_user_by_id,
     list_all_users,
@@ -43,6 +44,7 @@ from bot.services.freekassa import (
     resolve_payment_client_ip,
     verify_notification_signature,
 )
+from bot.services import cardlink as cardlink_service
 from bot.services.auth import user_display_name, admin_user_subtitle
 from bot.messages import (
     AMNEZIA_ANDROID,
@@ -398,6 +400,8 @@ def _pay_context(user: User) -> dict:
         "payment_bank": settings.payment_bank,
         "payment_holder": settings.payment_holder,
         "freekassa_enabled": settings.freekassa_enabled,
+        "online_payment_enabled": settings.online_payment_enabled,
+        "payment_provider": settings.active_payment_provider,
         "cabinet_base": cabinet_base_path(user, via_session=not user.cabinet_token),
     }
 
@@ -474,13 +478,17 @@ async def _cabinet_pay_submit(
     if days < 1 or days > 365:
         return RedirectResponse(f"{pay_base}/pay", status_code=303)
 
+    amount = settings.price_for_days(days)
+
+    if settings.active_payment_provider == "cardlink":
+        return await _cardlink_pay_submit(user, days, amount, session, pay_base=pay_base, pay_method=pay_method)
+
     if not settings.freekassa_enabled:
         return RedirectResponse(f"{pay_base}/pay", status_code=303)
 
     if pay_method not in FREEKASSA_PAY_METHODS:
         return RedirectResponse(f"{pay_base}/pay?error=method", status_code=303)
 
-    amount = settings.price_for_days(days)
     await cancel_pending_freekassa_for_user(session, user)
     payment = await create_payment_request(
         session,
@@ -501,6 +509,43 @@ async def _cabinet_pay_submit(
     except FreekassaApiError as exc:
         logger.exception("Freekassa order creation failed for payment %s: %s", payment.id, exc)
         await reject_payment(session, payment, "Ошибка создания заказа Freekassa")
+        return RedirectResponse(f"{pay_base}/pay?error=api", status_code=303)
+
+    return RedirectResponse(pay_url, status_code=303)
+
+
+async def _cardlink_pay_submit(
+    user: User,
+    days: int,
+    amount: float,
+    session: AsyncSession,
+    *,
+    pay_base: str,
+    pay_method: int,
+):
+    if not settings.cardlink_enabled:
+        return RedirectResponse(f"{pay_base}/pay", status_code=303)
+
+    await cancel_pending_cardlink_for_user(session, user)
+    payment = await create_payment_request(
+        session,
+        user,
+        amount,
+        days,
+        source="cardlink",
+    )
+
+    try:
+        pay_url = await cardlink_service.create_bill(
+            amount,
+            str(payment.id),
+            description=f"Пополнение баланса · {days} дн.",
+            payer_email=cardlink_service.payer_email_for_user(user),
+            payment_method=cardlink_service.payment_method_from_freekassa(pay_method),
+        )
+    except cardlink_service.CardlinkApiError as exc:
+        logger.exception("Cardlink bill creation failed for payment %s: %s", payment.id, exc)
+        await reject_payment(session, payment, "Ошибка создания счёта Cardlink")
         return RedirectResponse(f"{pay_base}/pay?error=api", status_code=303)
 
     return RedirectResponse(pay_url, status_code=303)
@@ -700,6 +745,171 @@ async def payment_fail(request: Request, session: AsyncSession = Depends(get_db)
         "payment_result.html",
         {"success": False, "title": "Оплата не прошла", "message": "Платёж отменён или произошла ошибка. Попробуйте снова из личного кабинета."},
     )
+
+
+# ──────────────────────────── Cardlink ────────────────────────────
+
+async def _cardlink_redirect_for_inv(
+    request: Request,
+    session: AsyncSession,
+    inv_id: str | None,
+    outcome: str,
+):
+    """Найти пользователя по InvId (= payment.id) и увести в кабинет с результатом."""
+    user = await get_user_from_session(request, session)
+    if not user and inv_id:
+        try:
+            payment = await session.get(Payment, int(inv_id))
+        except (ValueError, TypeError):
+            payment = None
+        if payment:
+            user = await session.get(User, payment.user_id)
+    if user:
+        via_session = bool(request.session.get("user_id"))
+        return RedirectResponse(
+            _payment_return_path(user, via_session=via_session, outcome=outcome),
+            status_code=303,
+        )
+    return templates.TemplateResponse(
+        request,
+        "payment_result.html",
+        {
+            "success": outcome == "ok",
+            "title": "Оплата прошла" if outcome == "ok" else "Оплата не прошла",
+            "message": (
+                "Баланс пополнен. Вернитесь в личный кабинет по сохранённой ссылке."
+                if outcome == "ok"
+                else "Платёж отменён или произошла ошибка. Попробуйте снова из личного кабинета."
+            ),
+        },
+    )
+
+
+@app.post("/cardlink/success", response_class=HTMLResponse)
+async def cardlink_success(request: Request, session: AsyncSession = Depends(get_db)):
+    form = dict(await request.form())
+    inv_id = form.get("InvId")
+    return await _cardlink_redirect_for_inv(request, session, inv_id, "ok")
+
+
+@app.post("/cardlink/fail", response_class=HTMLResponse)
+async def cardlink_fail(request: Request, session: AsyncSession = Depends(get_db)):
+    form = dict(await request.form())
+    inv_id = form.get("InvId")
+    if inv_id:
+        try:
+            payment = await session.get(Payment, int(inv_id))
+            if (
+                payment
+                and payment.source == "cardlink"
+                and payment.status == PaymentStatus.PENDING.value
+            ):
+                await reject_payment(session, payment, "Оплата не завершена")
+        except (ValueError, TypeError):
+            pass
+    return await _cardlink_redirect_for_inv(request, session, inv_id, "fail")
+
+
+@app.api_route("/cardlink/result", methods=["GET", "POST"])
+async def cardlink_result(request: Request, session: AsyncSession = Depends(get_db)):
+    if not settings.cardlink_enabled:
+        return PlainTextResponse("disabled", status_code=503)
+
+    params = dict(await request.form()) if request.method == "POST" else dict(request.query_params)
+    inv_id = params.get("InvId", "")
+    out_sum = params.get("OutSum", "")
+    status = params.get("Status", "")
+    signature = params.get("SignatureValue", "")
+
+    if not inv_id or not out_sum or not signature:
+        return PlainTextResponse("missing params", status_code=400)
+
+    if not cardlink_service.verify_payment_signature(out_sum, inv_id, signature):
+        return PlainTextResponse("wrong sign", status_code=400)
+
+    try:
+        payment = await session.get(Payment, int(inv_id))
+    except (ValueError, TypeError):
+        return PlainTextResponse("bad order", status_code=400)
+
+    if not payment or payment.source != "cardlink":
+        return PlainTextResponse("order not found", status_code=404)
+
+    if status != "SUCCESS":
+        if payment.status == PaymentStatus.PENDING.value:
+            await reject_payment(session, payment, f"Cardlink статус: {status}")
+        return PlainTextResponse("OK")
+
+    if payment.status == PaymentStatus.APPROVED.value:
+        return PlainTextResponse("OK")
+
+    if abs(float(out_sum) - payment.amount_rub) > 0.01:
+        return PlainTextResponse("wrong amount", status_code=400)
+
+    user = await approve_payment(session, payment)
+    await notify_payment_approved(
+        user.telegram_id,
+        payment.amount_rub,
+        payment.days_purchased or 0,
+        user.balance_rub,
+        user=user,
+    )
+    return PlainTextResponse("OK")
+
+
+@app.post("/cardlink/refund")
+async def cardlink_refund(request: Request, session: AsyncSession = Depends(get_db)):
+    if not settings.cardlink_enabled:
+        return PlainTextResponse("disabled", status_code=503)
+
+    form = dict(await request.form())
+    refund_id = form.get("Id", "")
+    amount = form.get("Amount", "")
+    currency = form.get("Currency", "")
+    bill_id = form.get("BillId", "")
+    payment_id = form.get("PaymentId", "")
+    signature = form.get("SignatureValue", "")
+
+    if not cardlink_service.verify_refund_signature(
+        amount, currency, bill_id, payment_id, refund_id, signature
+    ):
+        return PlainTextResponse("wrong sign", status_code=400)
+
+    logger.info(
+        "Cardlink refund: id=%s payment=%s bill=%s amount=%s status=%s",
+        refund_id,
+        payment_id,
+        bill_id,
+        amount,
+        form.get("Status"),
+    )
+    return PlainTextResponse("OK")
+
+
+@app.post("/cardlink/chargeback")
+async def cardlink_chargeback(request: Request, session: AsyncSession = Depends(get_db)):
+    if not settings.cardlink_enabled:
+        return PlainTextResponse("disabled", status_code=503)
+
+    form = dict(await request.form())
+    chargeback_id = form.get("Id", "")
+    bill_id = form.get("BillId", "")
+    payment_id = form.get("PaymentId", "")
+    signature = form.get("SignatureValue", "")
+
+    if not cardlink_service.verify_chargeback_signature(
+        bill_id, payment_id, chargeback_id, signature
+    ):
+        return PlainTextResponse("wrong sign", status_code=400)
+
+    logger.warning(
+        "Cardlink chargeback: id=%s payment=%s bill=%s status=%s",
+        chargeback_id,
+        payment_id,
+        bill_id,
+        form.get("Status"),
+    )
+    return PlainTextResponse("OK")
 
 
 @app.get("/admin/login", response_class=HTMLResponse)
