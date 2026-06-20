@@ -80,6 +80,15 @@ body::before {
   padding-top: 32px;
 }
 
+@media (display-mode: standalone) {
+  .wrap--cabinet {
+    padding-top: max(32px, env(safe-area-inset-top, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-bottom: max(64px, env(safe-area-inset-bottom, 0px));
+  }
+}
+
 .wrap--admin {
   max-width: 1280px;
   padding: 40px 24px 64px;
@@ -1301,6 +1310,15 @@ body::before {
   font-size: 0.875rem;
   font-weight: 600;
   margin-bottom: 16px;
+}
+
+.admin-preview-banner {
+  margin-bottom: 16px;
+}
+
+.admin-preview-banner a {
+  color: inherit;
+  font-weight: 600;
 }
 
 .payment-card {

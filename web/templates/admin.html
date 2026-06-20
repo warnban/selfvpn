@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Админ — {{ brand_name }}{% endblock %}
+{% block pwa_enabled %}no{% endblock %}
 {% block body_class %}theme-admin{% endblock %}
 {% block wrap_class %}wrap--admin{% endblock %}
 
@@ -27,12 +28,6 @@
 {% block content %}
 {% if request.query_params.get('credited') %}
 <div class="alert alert-success">Баланс начислен, пользователь уведомлён в Telegram.</div>
-{% endif %}
-{% if request.query_params.get('approved') %}
-<div class="alert alert-success">Платёж одобрен.</div>
-{% endif %}
-{% if request.query_params.get('rejected') %}
-<div class="alert alert-success">Платёж отклонён.</div>
 {% endif %}
 {% if request.query_params.get('stars_saved') %}
 <div class="alert alert-success">Курс Stars сохранён.</div>
@@ -80,16 +75,16 @@
 
   <div class="admin-stat-card">
     <div class="admin-stat-top">
-      <span class="admin-stat-label">Заявок</span>
-      <div class="admin-stat-icon" style="background:rgba(240,160,90,0.12)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#f0a05a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/>
+      <span class="admin-stat-label">Рефералов</span>
+      <div class="admin-stat-icon" style="background:rgba(93,232,200,0.12)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#5de8c8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
       </div>
     </div>
     <div>
-      <div class="admin-stat-value">{{ pending_payments|length }}</div>
-      <div class="admin-stat-sub">ожидают проверки</div>
+      <div class="admin-stat-value">{{ total_referrals }}</div>
+      <div class="admin-stat-sub">приглашений всего</div>
     </div>
   </div>
 
@@ -151,36 +146,37 @@
   </form>
 </section>
 
-{% if pending_payments %}
+{% if top_referrers %}
 <section class="pending-section">
-  <h2>Заявки на оплату</h2>
-  {% for row in pending_payments %}
-  {% set p = row.payment %}
-  {% set pu = row.user %}
-  <div class="payment-card">
-    <div class="user-card-header">
-      <div>
-        <div class="user-name">Заявка #{{ p.id }}</div>
-        <div class="user-meta">
-          {% if pu %}{{ user_display_name(pu) }} · {{ admin_user_subtitle(pu) }}{% endif %}
-          · {{ p.source }} · {{ p.days_purchased or '?' }} дн.
-        </div>
-      </div>
-      <span class="payment-amount">{{ "%.0f"|format(p.amount_rub) }} ₽</span>
-    </div>
-    {% if p.screenshot_path %}
-    <p style="margin-bottom:12px"><a class="link" href="{{ p.screenshot_path }}" target="_blank">Открыть скриншот</a></p>
-    {% endif %}
-    <div class="btn-group">
-      <form method="post" action="/admin/payments/{{ p.id }}/approve">
-        <button class="btn btn-success btn-sm" type="submit">Одобрить</button>
-      </form>
-      <form method="post" action="/admin/payments/{{ p.id }}/reject">
-        <button class="btn btn-danger btn-sm" type="submit">Отклонить</button>
-      </form>
-    </div>
+  <h2>Топ рефералов</h2>
+  <p class="muted" style="margin-bottom:16px">Пользователи, которые привели больше всего новых клиентов.</p>
+  <div class="table-scroll">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Пользователь</th>
+          <th>Приглашено</th>
+          <th>Бонус получен</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in top_referrers %}
+        {% set u = row[0] %}
+        {% set ref_count = row[1] %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>
+            <div class="user-display">{{ user_display_name(u) }}</div>
+            <div class="user-handle">{{ admin_user_subtitle(u) }}</div>
+          </td>
+          <td><strong>{{ ref_count }}</strong></td>
+          <td>{{ "%.0f"|format(ref_count * referral_bonus) }} ₽</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
-  {% endfor %}
 </section>
 {% endif %}
 
@@ -256,7 +252,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
               Баланс
             </button>
-            <a class="link" href="/cabinet/{{ u.cabinet_token }}" target="_blank" style="display:block;margin-top:8px;font-size:0.75rem">Кабинет →</a>
+            <a class="link" href="/admin/users/{{ u.id }}/cabinet" target="_blank" rel="noopener" style="display:block;margin-top:8px;font-size:0.75rem">Кабинет →</a>
           </td>
         </tr>
         {% endfor %}

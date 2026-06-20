@@ -28,6 +28,11 @@
 {% endblock %}
 
 {% block content %}
+{% if admin_preview %}
+<div class="alert alert-info admin-preview-banner">
+  Просмотр кабинета пользователя · <a href="/admin">← В админку</a>
+</div>
+{% endif %}
 {% if request.query_params.get('paid') == 'ok' %}
 <div class="alert alert-success">Оплата принята. Баланс обновится в течение минуты.</div>
 {% elif request.query_params.get('paid') == 'fail' %}

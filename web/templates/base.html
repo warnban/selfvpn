@@ -2,8 +2,19 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{% block title %}{{ brand_name }}{% endblock %}</title>
+  <!-- pwa:{% block pwa_enabled %}yes{% endblock %} -->
+  {% if self.pwa_enabled()|trim == 'yes' %}
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#0d0f12">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="{{ brand_name }}">
+  <link rel="icon" href="/static/pwa/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/static/pwa/icon.svg">
+  {% endif %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -23,5 +34,14 @@
     </div>
   </div>
   {% block scripts %}{% endblock %}
+  {% if self.pwa_enabled()|trim == 'yes' %}
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(() => {});
+      });
+    }
+  </script>
+  {% endif %}
 </body>
 </html>

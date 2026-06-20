@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d0f12">
+  <title>Нет сети</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      font-family: Inter, system-ui, sans-serif;
+      background: #0d0f12;
+      color: #e8eaed;
+      text-align: center;
+    }
+    .card {
+      max-width: 360px;
+      padding: 28px 24px;
+      border-radius: 16px;
+      background: #151820;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    h1 { margin: 0 0 8px; font-size: 1.25rem; }
+    p { margin: 0 0 20px; color: #6b7280; line-height: 1.5; }
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 600;
+      background: #39e87a;
+      color: #0a1a10;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Нет подключения</h1>
+    <p>Проверьте интернет и попробуйте снова. Кабинет откроется, когда связь восстановится.</p>
+    <button type="button" onclick="location.reload()">Обновить</button>
+  </div>
+</body>
+</html>

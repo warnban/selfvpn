@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator
+import json
 import logging
 from pathlib import Path
 
@@ -30,6 +31,8 @@ from bot.services.users import (
     get_user_by_cabinet_token,
     get_user_by_id,
     list_all_users,
+    list_top_referrers,
+    count_all_referrals,
     reject_payment,
 )
 
@@ -119,6 +122,60 @@ uploads_path.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
 
 
+def _pwa_short_name() -> str:
+    name = (settings.brand_name or "Кабинет").strip()
+    return name if len(name) <= 12 else "Кабинет"
+
+
+@app.get("/manifest.webmanifest")
+async def web_app_manifest():
+    manifest = {
+        "id": "/cabinet",
+        "name": settings.brand_name,
+        "short_name": _pwa_short_name(),
+        "description": f"Личный кабинет {settings.brand_name}",
+        "start_url": "/cabinet",
+        "scope": "/",
+        "display": "standalone",
+        "orientation": "portrait-primary",
+        "background_color": "#0d0f12",
+        "theme_color": "#0d0f12",
+        "lang": "ru",
+        "icons": [
+            {
+                "src": "/static/pwa/icon.svg",
+                "sizes": "any",
+                "type": "image/svg+xml",
+                "purpose": "any",
+            },
+            {
+                "src": "/static/pwa/icon-maskable.svg",
+                "sizes": "any",
+                "type": "image/svg+xml",
+                "purpose": "maskable",
+            },
+        ],
+    }
+    return Response(
+        content=json.dumps(manifest, ensure_ascii=False),
+        media_type="application/manifest+json",
+        headers={"Cache-Control": "no-cache"},
+    )
+
+
+@app.get("/sw.js")
+async def service_worker():
+    sw_path = static_path / "js" / "sw.js"
+    return Response(
+        content=sw_path.read_text(encoding="utf-8"),
+        media_type="application/javascript",
+        headers={
+            "Cache-Control": "no-cache",
+            "Service-Worker-Allowed": "/",
+        },
+    )
+
+
 def _payment_redirect_cabinet(user: User, query: str) -> str:
     return f"/cabinet/{user.cabinet_token}{query}"
 
@@ -129,9 +186,11 @@ async def _render_cabinet(
     session: AsyncSession,
     *,
     via_session: bool,
+    admin_preview: bool = False,
 ):
     ctx = await build_cabinet_context(request, user, session, via_session=via_session)
     ctx["bonus_status"] = request.query_params.get("bonus")
+    ctx["admin_preview"] = admin_preview
     return templates.TemplateResponse(request, "cabinet.html", ctx)
 
 
@@ -170,6 +229,11 @@ def _redirect_after_device_add(user: User, *, via_session: bool, err: str | None
 
 def is_admin(request: Request) -> bool:
     return request.session.get("admin") is True
+
+
+def _maybe_login_cabinet_user(request: Request, user: User) -> None:
+    if not is_admin(request):
+        login_session(request, user)
 
 
 @app.on_event("startup")
@@ -611,7 +675,7 @@ async def cabinet(request: Request, token: str, session: AsyncSession = Depends(
             {"title": "Не найдено", "message": "Ссылка недействительна."},
             status_code=404,
         )
-    login_session(request, user)
+    _maybe_login_cabinet_user(request, user)
     if needs_onboarding(user):
         return RedirectResponse(f"/cabinet/{token}/onboarding", status_code=303)
     return await _render_cabinet(request, user, session, via_session=False)
@@ -633,7 +697,7 @@ async def cabinet_token_onboarding(
             {"title": "Не найдено", "message": "Ссылка недействительна."},
             status_code=404,
         )
-    login_session(request, user)
+    _maybe_login_cabinet_user(request, user)
     if not needs_onboarding(user):
         return RedirectResponse(f"/cabinet/{token}", status_code=303)
     return await _render_onboarding(request, user, session, via_session=False)
@@ -991,18 +1055,8 @@ async def admin_dashboard(request: Request, session: AsyncSession = Depends(get_
         return RedirectResponse("/admin/login", status_code=303)
 
     users = await list_all_users(session)
-    pending = (
-        await session.execute(
-            select(Payment).where(
-                Payment.status == PaymentStatus.PENDING.value,
-                Payment.source.notin_(["freekassa", "stars"]),
-            )
-        )
-    ).scalars().all()
-    pending_rows = []
-    for payment in pending:
-        u = await session.get(User, payment.user_id)
-        pending_rows.append({"payment": payment, "user": u})
+    total_referrals = await count_all_referrals(session)
+    top_referrers = await list_top_referrers(session, limit=10)
 
     from bot.database.models import Device
 
@@ -1018,13 +1072,29 @@ async def admin_dashboard(request: Request, session: AsyncSession = Depends(get_
         "admin.html",
         {
             "users": users,
-            "pending_payments": pending_rows,
+            "total_referrals": total_referrals,
+            "top_referrers": top_referrers,
             "daily_price": settings.daily_price_rub,
+            "referral_bonus": settings.referral_bonus_rub,
             "stars_per_day": stars_per_day,
             "active_vpn": active_vpn,
             "device_counts": device_counts,
         },
     )
+
+
+@app.get("/admin/users/{user_id}/cabinet", response_class=HTMLResponse)
+async def admin_view_user_cabinet(
+    request: Request,
+    user_id: int,
+    session: AsyncSession = Depends(get_db),
+):
+    if not is_admin(request):
+        return RedirectResponse("/admin/login", status_code=303)
+    user = await get_user_by_id(session, user_id)
+    if not user:
+        return RedirectResponse("/admin", status_code=303)
+    return await _render_cabinet(request, user, session, via_session=False, admin_preview=True)
 
 
 @app.post("/admin/users/{user_id}/credit")

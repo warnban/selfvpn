@@ -1,7 +1,7 @@
 from datetime import datetime
 import secrets
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import logging
@@ -270,6 +270,22 @@ async def deactivate_vpn(session: AsyncSession, user: User) -> None:
 async def count_referrals(session: AsyncSession, user: User) -> int:
     result = await session.execute(select(Referral).where(Referral.referrer_id == user.id))
     return len(result.scalars().all())
+
+
+async def count_all_referrals(session: AsyncSession) -> int:
+    result = await session.execute(select(func.count(Referral.id)))
+    return int(result.scalar_one())
+
+
+async def list_top_referrers(session: AsyncSession, limit: int = 10) -> list[tuple[User, int]]:
+    result = await session.execute(
+        select(User, func.count(Referral.id).label("ref_count"))
+        .join(Referral, Referral.referrer_id == User.id)
+        .group_by(User.id)
+        .order_by(func.count(Referral.id).desc(), User.id.desc())
+        .limit(limit)
+    )
+    return [(row[0], int(row[1])) for row in result.all()]
 
 
 def days_left(user: User) -> int:
