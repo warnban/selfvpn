@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     daily_price_rub: float = 10.0
     trial_days: int = 2
     referral_bonus_rub: float = 5.0
+    min_topup_rub: float = 100.0
     max_devices: int = 5
     stars_per_day: int = 6
     stars_enabled: bool = True

@@ -116,6 +116,7 @@
         <a class="btn btn-sm" href="{{ channel_url }}" target="_blank" rel="noopener">Подписаться на канал</a>
         {% if channel_link_bot_url %}
           <a class="btn btn-sm btn-secondary" href="{{ channel_link_bot_url }}" target="_blank" rel="noopener">Привязать Telegram и забрать</a>
+          <p class="channel-bonus-hint muted">Сначала подпишитесь на канал, затем привяжите Telegram. Баланс и устройства из старого Telegram-аккаунта (если он есть) перенесутся сюда.</p>
         {% else %}
           <form method="post" action="{{ cabinet_base }}/channel-bonus/check" style="margin:0;">
             <button type="submit" class="btn btn-sm btn-secondary">Проверить подписку</button>

@@ -21,7 +21,15 @@ from bot.services.devices import (
     platform_label,
     remove_device,
 )
-from bot.services.app_settings import get_stars_per_day, set_stars_per_day
+from bot.services.app_settings import (
+    ALLOWED_DEPOSIT_MULTIPLIERS,
+    get_deposit_multiplier,
+    get_min_topup,
+    get_stars_per_day,
+    set_deposit_multiplier,
+    set_min_topup,
+    set_stars_per_day,
+)
 from bot.services.users import (
     admin_credit_balance,
     approve_payment,
@@ -503,7 +511,7 @@ async def _device_conf_response(session: AsyncSession, user: User, device_id: in
     )
 
 
-def _pay_context(user: User) -> dict:
+def _pay_context(user: User, *, deposit_multiplier: float = 1.0, min_topup: float = 0.0) -> dict:
     return {
         "user": user,
         "daily_price": settings.daily_price_rub,
@@ -515,6 +523,8 @@ def _pay_context(user: User) -> dict:
         "online_payment_enabled": settings.online_payment_enabled,
         "payment_provider": settings.active_payment_provider,
         "cabinet_base": cabinet_base_path(user, via_session=not user.cabinet_token),
+        "deposit_multiplier": deposit_multiplier,
+        "min_topup": min_topup,
     }
 
 
@@ -523,7 +533,11 @@ async def cabinet_session_pay_form(request: Request, session: AsyncSession = Dep
     user = await get_user_from_session(request, session)
     if not user:
         return RedirectResponse("/auth/login?next=/cabinet/pay", status_code=303)
-    ctx = _pay_context(user)
+    ctx = _pay_context(
+        user,
+        deposit_multiplier=await get_deposit_multiplier(session),
+        min_topup=await get_min_topup(session),
+    )
     ctx["cabinet_base"] = "/cabinet"
     return templates.TemplateResponse(request, "pay.html", ctx)
 
@@ -535,7 +549,11 @@ async def cabinet_pay_form(request: Request, token: str, session: AsyncSession =
     user = await get_user_by_cabinet_token(session, token)
     if not user:
         return RedirectResponse("/", status_code=303)
-    ctx = _pay_context(user)
+    ctx = _pay_context(
+        user,
+        deposit_multiplier=await get_deposit_multiplier(session),
+        min_topup=await get_min_topup(session),
+    )
     ctx["cabinet_base"] = f"/cabinet/{token}"
     return templates.TemplateResponse(request, "pay.html", ctx)
 
@@ -591,6 +609,10 @@ async def _cabinet_pay_submit(
         return RedirectResponse(f"{pay_base}/pay", status_code=303)
 
     amount = settings.price_for_days(days)
+
+    min_topup = await get_min_topup(session)
+    if amount < min_topup:
+        return RedirectResponse(f"{pay_base}/pay?error=min", status_code=303)
 
     if settings.active_payment_provider == "cardlink":
         return await _cardlink_pay_submit(user, days, amount, session, pay_base=pay_base, pay_method=pay_method)
@@ -781,12 +803,13 @@ async def payment_notify(request: Request, session: AsyncSession = Depends(get_d
     if abs(float(amount) - payment.amount_rub) > 0.01:
         return PlainTextResponse("wrong amount", status_code=400)
 
-    user = await approve_payment(session, payment)
+    user, credited = await approve_payment(session, payment)
     await notify_payment_approved(
         user.telegram_id,
         payment.amount_rub,
         payment.days_purchased or 0,
         user.balance_rub,
+        credited=credited,
         user=user,
     )
     return PlainTextResponse("YES")
@@ -962,12 +985,13 @@ async def cardlink_result(request: Request, session: AsyncSession = Depends(get_
     if abs(float(out_sum) - payment.amount_rub) > 0.01:
         return PlainTextResponse("wrong amount", status_code=400)
 
-    user = await approve_payment(session, payment)
+    user, credited = await approve_payment(session, payment)
     await notify_payment_approved(
         user.telegram_id,
         payment.amount_rub,
         payment.days_purchased or 0,
         user.balance_rub,
+        credited=credited,
         user=user,
     )
     return PlainTextResponse("OK")
@@ -1066,6 +1090,8 @@ async def admin_dashboard(request: Request, session: AsyncSession = Depends(get_
         device_counts[d.user_id] = device_counts.get(d.user_id, 0) + 1
     active_vpn = len(devices)
     stars_per_day = await get_stars_per_day(session)
+    deposit_multiplier = await get_deposit_multiplier(session)
+    min_topup = await get_min_topup(session)
 
     return templates.TemplateResponse(
         request,
@@ -1077,6 +1103,9 @@ async def admin_dashboard(request: Request, session: AsyncSession = Depends(get_
             "daily_price": settings.daily_price_rub,
             "referral_bonus": settings.referral_bonus_rub,
             "stars_per_day": stars_per_day,
+            "deposit_multiplier": deposit_multiplier,
+            "min_topup": min_topup,
+            "allowed_multipliers": ALLOWED_DEPOSIT_MULTIPLIERS,
             "active_vpn": active_vpn,
             "device_counts": device_counts,
         },
@@ -1138,12 +1167,13 @@ async def admin_approve_payment_web(
     if payment.source in ("freekassa", "stars"):
         return RedirectResponse("/admin", status_code=303)
 
-    user = await approve_payment(session, payment)
+    user, credited = await approve_payment(session, payment)
     await notify_payment_approved(
         user.telegram_id,
         payment.amount_rub,
         payment.days_purchased or 0,
         user.balance_rub,
+        credited=credited,
         user=user,
     )
     return RedirectResponse("/admin?approved=1", status_code=303)
@@ -1182,6 +1212,32 @@ async def admin_update_stars(
 
     await set_stars_per_day(session, stars_per_day)
     return RedirectResponse("/admin?stars_saved=1", status_code=303)
+
+
+@app.post("/admin/settings/promo")
+async def admin_update_promo(
+    request: Request,
+    deposit_multiplier: float = Form(...),
+    session: AsyncSession = Depends(get_db),
+):
+    if not is_admin(request):
+        return RedirectResponse("/admin/login", status_code=303)
+
+    await set_deposit_multiplier(session, deposit_multiplier)
+    return RedirectResponse("/admin?promo_saved=1#promo", status_code=303)
+
+
+@app.post("/admin/settings/min-topup")
+async def admin_update_min_topup(
+    request: Request,
+    min_topup_rub: float = Form(...),
+    session: AsyncSession = Depends(get_db),
+):
+    if not is_admin(request):
+        return RedirectResponse("/admin/login", status_code=303)
+
+    await set_min_topup(session, min_topup_rub)
+    return RedirectResponse("/admin?min_saved=1#promo", status_code=303)
 
 
 if landing_index.is_file():

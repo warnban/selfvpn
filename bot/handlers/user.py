@@ -85,20 +85,32 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
         if not user:
             await message.answer("Аккаунт не найден.")
             return
-        err = await link_telegram_to_user(
+        result = await link_telegram_to_user(
             session,
             user,
             telegram_id=message.from_user.id,
             username=message.from_user.username,
             first_name=message.from_user.first_name,
         )
-        if err:
-            await message.answer(f"❌ {err}")
+        if result.error:
+            await message.answer(f"❌ {result.error}")
             return
         cabinet_link = settings.cabinet_url(user.cabinet_token)
+        account_label = user.email or "вашему аккаунту"
+        lines = [f"✅ Telegram привязан к аккаунту <b>{account_label}</b>!"]
+        if result.merged and (result.moved_balance > 0 or result.moved_devices > 0):
+            merge_lines = ["", "🔗 Перенёс данные из вашего прежнего Telegram-аккаунта:"]
+            if result.moved_balance > 0:
+                merge_lines.append(f"• Баланс: <b>+{result.moved_balance:.0f} ₽</b>")
+            if result.moved_devices > 0:
+                merge_lines.append(f"• Устройств: <b>{result.moved_devices}</b>")
+            merge_lines.append("Теперь всё в одном профиле.")
+            lines.extend(merge_lines)
+        lines.append("")
+        lines.append(f"💰 Баланс: <b>{user.balance_rub:.0f} ₽</b>")
+        lines.append(f"🌐 <a href=\"{cabinet_link}\">Личный кабинет</a>")
         await message.answer(
-            f"✅ Telegram привязан к аккаунту <b>{user.email}</b>!\n\n"
-            f"🌐 <a href=\"{cabinet_link}\">Личный кабинет</a>",
+            "\n".join(lines),
             reply_markup=menu_for(message.from_user.id),
             parse_mode="HTML",
             disable_web_page_preview=True,

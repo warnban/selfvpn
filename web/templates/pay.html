@@ -22,15 +22,22 @@
 {% elif request.query_params.get('paid') == 'fail' %}
 <div class="alert alert-error">Оплата не прошла. Попробуйте ещё раз.</div>
 {% endif %}
+
+{% if deposit_multiplier and deposit_multiplier > 1 %}
+<div class="alert alert-success" style="display:flex;align-items:center;gap:10px">
+  <span style="font-size:1.4rem">🎉</span>
+  <span>Акция: <b>×{{ deposit_multiplier|int }}</b> к пополнению! Пополни баланс — зачислим в {{ deposit_multiplier|int }} раза больше.</span>
+</div>
+{% endif %}
+
 <div class="card">
   <form method="post">
     <label for="days">Срок подписки</label>
     <select name="days" id="days" required onchange="updatePrice()">
-      {% for d in presets %}
+      {% for d in (presets + [15, 45, 180])|sort %}
+      {% if (d * daily_price) >= (min_topup or 0) %}
       <option value="{{ d }}">{{ d }} дней — {{ (d * daily_price)|int }} ₽</option>
-      {% endfor %}
-      {% for d in [15, 45, 180] %}
-      <option value="{{ d }}">{{ d }} дней — {{ (d * daily_price)|int }} ₽</option>
+      {% endif %}
       {% endfor %}
     </select>
 
@@ -47,15 +54,22 @@
     <div class="alert alert-error" style="margin-bottom:20px">Не удалось создать платёж. Попробуйте ещё раз или выберите другой способ оплаты.</div>
     {% elif request.query_params.get('error') == 'method' %}
     <div class="alert alert-error" style="margin-bottom:20px">Выбран недоступный способ оплаты.</div>
+    {% elif request.query_params.get('error') == 'min' %}
+    <div class="alert alert-error" style="margin-bottom:20px">Минимальная сумма пополнения — {{ (min_topup or 0)|int }} ₽. Выберите срок побольше.</div>
     {% endif %}
 
     <div class="stat-box" style="margin-bottom:20px">
       <div class="value" id="priceHint">—</div>
       <div class="label">К оплате</div>
+      <div class="label" id="creditHint" style="margin-top:6px"></div>
     </div>
 
     {% if online_payment_enabled %}
-    <p class="muted" style="margin-bottom:20px">Сумма считается по тарифу {{ daily_price }} ₽/сутки. После оплаты баланс зачислится автоматически — без скриншотов и ожидания админа.</p>
+    <p class="muted" style="margin-bottom:20px">
+      Сумма считается по тарифу {{ daily_price }} ₽/сутки.
+      {% if min_topup and min_topup > 0 %}Минимум — {{ min_topup|int }} ₽.{% endif %}
+      После оплаты баланс зачислится автоматически — без скриншотов и ожидания админа.
+    </p>
     <button class="btn btn-block" type="submit">Оплатить</button>
     {% else %}
     <div class="alert alert-error">Онлайн-оплата временно недоступна. Обратитесь к администратору.</div>
@@ -67,9 +81,20 @@
 {% block scripts %}
 <script>
 const daily = {{ daily_price }};
+const multiplier = {{ deposit_multiplier or 1 }};
 function updatePrice() {
-  const days = document.getElementById('days').value;
-  document.getElementById('priceHint').textContent = Math.round(days * daily) + ' ₽';
+  const sel = document.getElementById('days');
+  const days = sel ? sel.value : 0;
+  const amount = Math.round(days * daily);
+  document.getElementById('priceHint').textContent = amount + ' ₽';
+  const credit = document.getElementById('creditHint');
+  if (credit) {
+    if (multiplier > 1) {
+      credit.textContent = '🎁 На баланс: ' + Math.round(amount * multiplier) + ' ₽';
+    } else {
+      credit.textContent = '';
+    }
+  }
 }
 updatePrice();
 </script>

@@ -1,13 +1,14 @@
 import re
 import secrets
+from dataclasses import dataclass
 
 import bcrypt
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
-from bot.database.models import Referral, User
+from bot.database.models import Device, Payment, Referral, User
 from bot.services.email import send_password_reset_email, send_verification_email
 
 _token_serializer = URLSafeTimedSerializer(settings.web_secret_key)
@@ -262,20 +263,113 @@ async def change_password(
     return None
 
 
+@dataclass
+class LinkResult:
+    """Итог привязки Telegram. error != None — привязка не выполнена."""
+
+    error: str | None = None
+    merged: bool = False
+    moved_balance: float = 0.0
+    moved_devices: int = 0
+
+
+async def _merge_accounts(session: AsyncSession, primary: User, dup: User) -> LinkResult:
+    """Сливает дубликат-аккаунт ``dup`` в основной ``primary`` и удаляет дубль.
+
+    ``primary`` — это email/web-аккаунт, на котором пользователь копил баланс,
+    поэтому он остаётся основным. Всё ценное из Telegram-аккаунта переносим к нему,
+    баланс суммируем (чтобы не потерять реальные пополнения).
+    """
+    moved_balance = dup.balance_rub or 0.0
+    primary.balance_rub = (primary.balance_rub or 0.0) + moved_balance
+
+    # Устройства (VPN-ключи) и платежи переносим на основной аккаунт.
+    device_res = await session.execute(
+        update(Device).where(Device.user_id == dup.id).values(user_id=primary.id)
+    )
+    moved_devices = device_res.rowcount or 0
+    await session.execute(
+        update(Payment).where(Payment.user_id == dup.id).values(user_id=primary.id)
+    )
+
+    # Убираем взаимные реферальные связи между сливаемыми аккаунтами,
+    # иначе после переноса получим запись "сам себя пригласил".
+    await session.execute(
+        delete(Referral).where(
+            ((Referral.referrer_id == dup.id) & (Referral.referred_id == primary.id))
+            | ((Referral.referrer_id == primary.id) & (Referral.referred_id == dup.id))
+        )
+    )
+
+    # Кого пригласил дубль — теперь приглашения числятся за основным аккаунтом.
+    await session.execute(
+        update(Referral).where(Referral.referrer_id == dup.id).values(referrer_id=primary.id)
+    )
+    # Кто пригласил дубль (referred_id уникален): переносим только если у основного
+    # такой записи ещё нет, иначе просто удаляем «лишнюю».
+    primary_referred = await session.execute(
+        select(Referral.id).where(Referral.referred_id == primary.id)
+    )
+    if primary_referred.scalar_one_or_none() is not None:
+        await session.execute(delete(Referral).where(Referral.referred_id == dup.id))
+    else:
+        await session.execute(
+            update(Referral).where(Referral.referred_id == dup.id).values(referred_id=primary.id)
+        )
+
+    # Пользователи, у которых дубль был реферером, теперь ссылаются на основной аккаунт.
+    await session.execute(
+        update(User)
+        .where(User.referrer_id == dup.id, User.id != primary.id)
+        .values(referrer_id=primary.id)
+    )
+    if primary.referrer_id == dup.id:
+        primary.referrer_id = None
+    elif not primary.referrer_id and dup.referrer_id and dup.referrer_id not in (primary.id, dup.id):
+        primary.referrer_id = dup.referrer_id
+
+    # Разовые бонусы и онбординг — считаем выполненными, если хотя бы где-то были.
+    primary.channel_bonus_paid = primary.channel_bonus_paid or dup.channel_bonus_paid
+    primary.referral_bonus_paid = primary.referral_bonus_paid or dup.referral_bonus_paid
+    primary.onboarding_completed = primary.onboarding_completed or dup.onboarding_completed
+
+    # Берём более свежую дату списания, чтобы не словить разовое «дописывание» за прошлое.
+    if dup.last_billed_at and (
+        not primary.last_billed_at or dup.last_billed_at > primary.last_billed_at
+    ):
+        primary.last_billed_at = dup.last_billed_at
+
+    if not primary.display_name and dup.display_name:
+        primary.display_name = dup.display_name
+    if not primary.vpn_client_id and dup.vpn_client_id:
+        primary.vpn_client_id = dup.vpn_client_id
+        primary.vpn_link = dup.vpn_link
+        primary.vpn_active = dup.vpn_active
+
+    # Удаляем дубль ДО присвоения telegram_id основному — освобождаем unique-индекс.
+    await session.execute(delete(User).where(User.id == dup.id))
+    session.expunge(dup)
+
+    return LinkResult(merged=True, moved_balance=moved_balance, moved_devices=moved_devices)
+
+
 async def link_telegram_to_user(
     session: AsyncSession,
     user: User,
     telegram_id: int,
     username: str | None,
     first_name: str | None,
-) -> str | None:
+) -> LinkResult:
     if user.telegram_id:
-        return "Telegram уже привязан"
+        return LinkResult(error="Telegram уже привязан")
 
     existing = await session.execute(select(User).where(User.telegram_id == telegram_id))
     other = existing.scalar_one_or_none()
+
+    result = LinkResult()
     if other and other.id != user.id:
-        return "Этот Telegram уже привязан к другому аккаунту"
+        # У пользователя уже есть отдельный Telegram-аккаунт в боте — сливаем его сюда.
+        result = await _merge_accounts(session, primary=user, dup=other)
 
     user.telegram_id = telegram_id
     if username:
@@ -285,7 +379,8 @@ async def link_telegram_to_user(
     if user.auth_provider == "email":
         user.auth_provider = "both"
     await session.commit()
-    return None
+    await session.refresh(user)
+    return result
 
 
 def make_telegram_link_token(user_id: int) -> str:

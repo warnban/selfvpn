@@ -52,8 +52,9 @@
     {% endif %}
     <div class="row"><span>Telegram</span><strong>{% if has_telegram %}@{{ user.username or 'привязан' }}{% else %}Не привязан{% endif %}</strong></div>
     {% if telegram_link_token %}
-    <p class="muted" style="margin-top:12px">Привяжите Telegram для оплаты Stars и уведомлений:</p>
-    <a class="btn btn-block" href="https://t.me/{{ bot_username }}?start=link_{{ telegram_link_token }}" target="_blank" rel="noopener">
+    <p class="muted" style="margin-top:12px">Привяжите Telegram для оплаты Stars и уведомлений.</p>
+    <p class="muted" style="margin-top:4px">Если вы раньше пользовались ботом — баланс и устройства из того аккаунта автоматически перенесутся в этот профиль.</p>
+    <a class="btn btn-block" style="margin-top:12px" href="https://t.me/{{ bot_username }}?start=link_{{ telegram_link_token }}" target="_blank" rel="noopener">
       Привязать Telegram
     </a>
     {% endif %}

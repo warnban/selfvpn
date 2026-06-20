@@ -193,28 +193,47 @@ async def finalize_stars_payment(
     *,
     charge_id: str,
     stars_paid: int,
-) -> User:
+) -> tuple[User, float]:
     user = await session.get(User, payment.user_id)
     if payment.status == PaymentStatus.APPROVED.value:
         if user:
             await session.refresh(user)
-        return user
+        return user, payment.amount_rub
 
     payment.stars_amount = stars_paid
     payment.telegram_charge_id = charge_id
     return await approve_payment(session, payment)
 
 
-async def approve_payment(session: AsyncSession, payment: Payment) -> User:
+async def approve_payment(session: AsyncSession, payment: Payment) -> tuple[User, float]:
+    """Подтверждает платёж и начисляет баланс с учётом акции-множителя.
+
+    Возвращает (user, credited) — сколько реально зачислено на баланс.
+    payment.amount_rub остаётся фактически оплаченной суммой (нужно для сверки с кассой).
+    """
+    from bot.services.app_settings import get_deposit_multiplier
+
     payment.status = PaymentStatus.APPROVED.value
     payment.processed_at = datetime.utcnow()
+
+    multiplier = await get_deposit_multiplier(session)
+    credited = round(payment.amount_rub * multiplier, 2)
+
     user = await session.get(User, payment.user_id)
     if user:
-        user.balance_rub += payment.amount_rub
+        user.balance_rub += credited
+    if multiplier > 1:
+        note = (
+            f"Акция ×{multiplier:g}: оплачено {payment.amount_rub:.0f} ₽, "
+            f"начислено {credited:.0f} ₽"
+        )
+        payment.admin_comment = (
+            f"{payment.admin_comment}\n{note}" if payment.admin_comment else note
+        )
     await session.commit()
     if user:
         await session.refresh(user)
-    return user
+    return user, credited
 
 
 async def reject_payment(session: AsyncSession, payment: Payment, comment: str | None = None) -> None:

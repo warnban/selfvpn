@@ -32,6 +32,12 @@
 {% if request.query_params.get('stars_saved') %}
 <div class="alert alert-success">Курс Stars сохранён.</div>
 {% endif %}
+{% if request.query_params.get('promo_saved') %}
+<div class="alert alert-success">Настройки акции сохранены.</div>
+{% endif %}
+{% if request.query_params.get('min_saved') %}
+<div class="alert alert-success">Минимальная сумма пополнения сохранена.</div>
+{% endif %}
 
 {% set active_users = namespace(count=0) %}
 {% for u in users %}
@@ -118,6 +124,56 @@
     </div>
   </div>
 </div>
+
+<section class="pending-section" id="promo" style="margin-bottom:24px">
+  <h2>Акции и пополнения</h2>
+  <p class="muted" style="margin-bottom:16px">
+    Множитель пополнения: при включённой акции пользователь получает на баланс больше, чем заплатил.
+    Например, при <b>×2</b> пополнение на 100 ₽ даёт 200 ₽ на баланс.
+  </p>
+  <form method="post" action="/admin/settings/promo" class="credit-form" style="max-width:520px;margin-bottom:24px">
+    <label for="deposit_multiplier">Акция «удвоение / утроение пополнения»</label>
+    <div style="display:flex;gap:12px;align-items:center;margin-top:8px;flex-wrap:wrap">
+      <select id="deposit_multiplier" name="deposit_multiplier" style="flex:1;min-width:200px">
+        <option value="1.0" {% if deposit_multiplier <= 1 %}selected{% endif %}>Выключена — начисляем ровно сумму</option>
+        <option value="2.0" {% if deposit_multiplier == 2 %}selected{% endif %}>×2 — удвоение пополнения</option>
+        <option value="3.0" {% if deposit_multiplier == 3 %}selected{% endif %}>×3 — утроение пополнения</option>
+      </select>
+      <button type="submit" class="btn btn-primary">Сохранить</button>
+    </div>
+    <p class="muted" style="margin-top:12px;font-size:0.9rem">
+      Сейчас:
+      {% if deposit_multiplier > 1 %}
+        <b>акция ×{{ deposit_multiplier|int }}</b> активна — пополнение на 100 ₽ = {{ (100 * deposit_multiplier)|int }} ₽ на балансе.
+      {% else %}
+        акция выключена — начисляем ровно сумму пополнения.
+      {% endif %}
+      Применяется к оплатам картой/СБП и Telegram Stars. Ручные начисления админом не удваиваются.
+    </p>
+  </form>
+
+  <form method="post" action="/admin/settings/min-topup" class="credit-form" style="max-width:520px">
+    <label for="min_topup_rub">Минимальная сумма пополнения, ₽</label>
+    <div style="display:flex;gap:12px;align-items:center;margin-top:8px">
+      <input
+        id="min_topup_rub"
+        name="min_topup_rub"
+        type="number"
+        min="0"
+        max="1000000"
+        step="1"
+        value="{{ min_topup|int }}"
+        required
+        style="flex:1"
+      />
+      <button type="submit" class="btn btn-primary">Сохранить</button>
+    </div>
+    <p class="muted" style="margin-top:12px;font-size:0.9rem">
+      Пользователь не сможет пополнить меньше этой суммы. При тарифе {{ daily_price|int }} ₽/сутки это ≈
+      {{ (min_topup / daily_price)|round(0, 'ceil')|int if daily_price else 0 }} дн. минимум.
+    </p>
+  </form>
+</section>
 
 <section class="pending-section" style="margin-bottom:24px">
   <h2>Telegram Stars</h2>

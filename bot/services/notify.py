@@ -74,14 +74,20 @@ async def notify_payment_approved(
     days: int,
     balance: float,
     *,
+    credited: float | None = None,
     user: User | None = None,
 ) -> None:
-    text = (
-        f"✅ Оплата подтверждена!\n"
-        f"📦 Пакет: {days} дн.\n"
-        f"💳 Сумма: {amount:.0f} ₽\n"
-        f"💰 Баланс: {balance:.0f} ₽"
-    )
+    lines = [
+        "✅ Оплата подтверждена!",
+        f"📦 Пакет: {days} дн.",
+        f"💳 Оплачено: {amount:.0f} ₽",
+    ]
+    if credited is not None and credited > amount + 0.01:
+        bonus = credited - amount
+        lines.append(f"🎁 Бонус акции: +{bonus:.0f} ₽")
+        lines.append(f"➕ Зачислено: {credited:.0f} ₽")
+    lines.append(f"💰 Баланс: {balance:.0f} ₽")
+    text = "\n".join(lines)
     if user:
         await notify_user(user, text, subject="Оплата подтверждена")
     elif telegram_id:

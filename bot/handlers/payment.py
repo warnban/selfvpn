@@ -10,7 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.config import settings
 from bot.database.models import Payment, PaymentStatus, User
 from bot.keyboards.main import stars_days_selection_kb
-from bot.services.app_settings import get_stars_per_day, stars_for_days
+from bot.services.app_settings import (
+    get_deposit_multiplier,
+    get_min_topup,
+    get_stars_per_day,
+    stars_for_days,
+)
 from bot.services.notify import notify_payment_approved, notify_payment_rejected
 from bot.services.users import (
     approve_payment,
@@ -43,6 +48,16 @@ async def _send_stars_invoice(message: Message, session: AsyncSession, user: Use
 
     stars = await stars_for_days(session, days)
     amount_rub = settings.price_for_days(days)
+
+    min_topup = await get_min_topup(session)
+    if amount_rub < min_topup:
+        min_days = max(1, -(-int(min_topup) // int(settings.daily_price_rub))) if settings.daily_price_rub else 1
+        await message.answer(
+            f"Минимальная сумма пополнения — <b>{min_topup:.0f} ₽</b>.\n"
+            f"Выбери срок от <b>{min_days} дн.</b> и больше.",
+            parse_mode="HTML",
+        )
+        return
     await cancel_pending_stars_for_user(session, user)
     payment = await create_payment_request(
         session,
@@ -79,14 +94,22 @@ async def stars_topup_start(message: Message, state: FSMContext, session: AsyncS
         return
 
     stars_day = await get_stars_per_day(session)
+    multiplier = await get_deposit_multiplier(session)
     pay_link = settings.cabinet_pay_url(user.cabinet_token)
     kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="💳 Оплатить картой в кабинете", url=pay_link)],
         ]
     )
+    promo_line = ""
+    if multiplier > 1:
+        promo_line = (
+            f"🎉 <b>Акция ×{multiplier:g}!</b> Баланс пополнится в {multiplier:g} раза больше "
+            "оплаченной суммы.\n\n"
+        )
     await message.answer(
         "⭐ <b>Пополнение через Telegram Stars</b>\n\n"
+        f"{promo_line}"
         f"Тариф: <b>{settings.daily_price_rub:.0f} ₽/сутки</b> "
         f"(≈ <b>{stars_day} ⭐/сутки</b>)\n\n"
         "Выбери срок — придёт счёт на оплату Stars прямо в Telegram.",
@@ -187,7 +210,7 @@ async def stars_successful_payment(message: Message, session: AsyncSession) -> N
         return
 
     already_done = payment.status == PaymentStatus.APPROVED.value
-    user = await finalize_stars_payment(
+    user, credited = await finalize_stars_payment(
         session,
         payment,
         charge_id=sp.telegram_payment_charge_id,
@@ -202,14 +225,20 @@ async def stars_successful_payment(message: Message, session: AsyncSession) -> N
         payment.amount_rub,
         payment.days_purchased or 0,
         user.balance_rub,
+        credited=credited,
     )
-    await message.answer(
-        f"✅ Оплата прошла!\n\n"
-        f"Начислено: <b>{payment.amount_rub:.0f} ₽</b> "
-        f"({payment.days_purchased} дн.)\n"
-        f"Баланс: <b>{user.balance_rub:.0f} ₽</b>",
-        parse_mode="HTML",
-    )
+    lines = ["✅ Оплата прошла!", ""]
+    if credited > payment.amount_rub + 0.01:
+        bonus = credited - payment.amount_rub
+        lines.append(f"Оплачено: <b>{payment.amount_rub:.0f} ₽</b> ({payment.days_purchased} дн.)")
+        lines.append(f"🎁 Бонус акции: <b>+{bonus:.0f} ₽</b>")
+        lines.append(f"Зачислено: <b>{credited:.0f} ₽</b>")
+    else:
+        lines.append(
+            f"Начислено: <b>{credited:.0f} ₽</b> ({payment.days_purchased} дн.)"
+        )
+    lines.append(f"Баланс: <b>{user.balance_rub:.0f} ₽</b>")
+    await message.answer("\n".join(lines), parse_mode="HTML")
 
 
 @router.message(F.text == "💳 Пополнить")
@@ -229,7 +258,7 @@ async def admin_approve_payment(callback: CallbackQuery, session: AsyncSession) 
         await callback.answer("Заявка уже обработана", show_alert=True)
         return
 
-    user = await approve_payment(session, payment)
+    user, credited = await approve_payment(session, payment)
     await callback.message.edit_caption(
         caption=callback.message.caption + "\n\n✅ ОДОБРЕНО",
         reply_markup=None,
@@ -241,6 +270,7 @@ async def admin_approve_payment(callback: CallbackQuery, session: AsyncSession) 
         payment.amount_rub,
         payment.days_purchased or 0,
         user.balance_rub,
+        credited=credited,
     )
 
 
