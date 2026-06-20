@@ -785,17 +785,23 @@ async def _cardlink_redirect_for_inv(
     )
 
 
-@app.post("/cardlink/success", response_class=HTMLResponse)
+async def _cardlink_form_or_query(request: Request) -> dict:
+    if request.method == "POST":
+        return dict(await request.form())
+    return dict(request.query_params)
+
+
+@app.api_route("/cardlink/success", methods=["GET", "POST"], response_class=HTMLResponse)
 async def cardlink_success(request: Request, session: AsyncSession = Depends(get_db)):
-    form = dict(await request.form())
-    inv_id = form.get("InvId")
+    params = await _cardlink_form_or_query(request)
+    inv_id = params.get("InvId")
     return await _cardlink_redirect_for_inv(request, session, inv_id, "ok")
 
 
-@app.post("/cardlink/fail", response_class=HTMLResponse)
+@app.api_route("/cardlink/fail", methods=["GET", "POST"], response_class=HTMLResponse)
 async def cardlink_fail(request: Request, session: AsyncSession = Depends(get_db)):
-    form = dict(await request.form())
-    inv_id = form.get("InvId")
+    params = await _cardlink_form_or_query(request)
+    inv_id = params.get("InvId")
     if inv_id:
         try:
             payment = await session.get(Payment, int(inv_id))
@@ -812,17 +818,15 @@ async def cardlink_fail(request: Request, session: AsyncSession = Depends(get_db
 
 @app.api_route("/cardlink/result", methods=["GET", "POST"])
 async def cardlink_result(request: Request, session: AsyncSession = Depends(get_db)):
-    if not settings.cardlink_enabled:
-        return PlainTextResponse("disabled", status_code=503)
-
-    params = dict(await request.form()) if request.method == "POST" else dict(request.query_params)
+    params = await _cardlink_form_or_query(request)
     inv_id = params.get("InvId", "")
     out_sum = params.get("OutSum", "")
     status = params.get("Status", "")
     signature = params.get("SignatureValue", "")
 
-    if not inv_id or not out_sum or not signature:
-        return PlainTextResponse("missing params", status_code=400)
+    # Проверочный/пустой запрос (модерация Cardlink) — отвечаем 200, не пытаясь обработать.
+    if not settings.cardlink_enabled or not (inv_id and out_sum and signature):
+        return PlainTextResponse("OK")
 
     if not cardlink_service.verify_payment_signature(out_sum, inv_id, signature):
         return PlainTextResponse("wrong sign", status_code=400)
@@ -857,18 +861,18 @@ async def cardlink_result(request: Request, session: AsyncSession = Depends(get_
     return PlainTextResponse("OK")
 
 
-@app.post("/cardlink/refund")
+@app.api_route("/cardlink/refund", methods=["GET", "POST"])
 async def cardlink_refund(request: Request, session: AsyncSession = Depends(get_db)):
-    if not settings.cardlink_enabled:
-        return PlainTextResponse("disabled", status_code=503)
-
-    form = dict(await request.form())
+    form = await _cardlink_form_or_query(request)
     refund_id = form.get("Id", "")
     amount = form.get("Amount", "")
     currency = form.get("Currency", "")
     bill_id = form.get("BillId", "")
     payment_id = form.get("PaymentId", "")
     signature = form.get("SignatureValue", "")
+
+    if not settings.cardlink_enabled or not signature:
+        return PlainTextResponse("OK")
 
     if not cardlink_service.verify_refund_signature(
         amount, currency, bill_id, payment_id, refund_id, signature
@@ -886,16 +890,16 @@ async def cardlink_refund(request: Request, session: AsyncSession = Depends(get_
     return PlainTextResponse("OK")
 
 
-@app.post("/cardlink/chargeback")
+@app.api_route("/cardlink/chargeback", methods=["GET", "POST"])
 async def cardlink_chargeback(request: Request, session: AsyncSession = Depends(get_db)):
-    if not settings.cardlink_enabled:
-        return PlainTextResponse("disabled", status_code=503)
-
-    form = dict(await request.form())
+    form = await _cardlink_form_or_query(request)
     chargeback_id = form.get("Id", "")
     bill_id = form.get("BillId", "")
     payment_id = form.get("PaymentId", "")
     signature = form.get("SignatureValue", "")
+
+    if not settings.cardlink_enabled or not signature:
+        return PlainTextResponse("OK")
 
     if not cardlink_service.verify_chargeback_signature(
         bill_id, payment_id, chargeback_id, signature
