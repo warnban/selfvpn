@@ -515,7 +515,7 @@ def _pay_context(user: User, *, deposit_multiplier: float = 1.0, min_topup: floa
     return {
         "user": user,
         "daily_price": settings.daily_price_rub,
-        "presets": [7, 14, 30, 60, 90],
+        "presets": [10, 14, 30, 60, 90],
         "payment_card": settings.payment_card,
         "payment_bank": settings.payment_bank,
         "payment_holder": settings.payment_holder,

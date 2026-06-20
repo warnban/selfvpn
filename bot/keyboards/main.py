@@ -164,7 +164,7 @@ def device_del_confirm_kb(device_id: int) -> InlineKeyboardMarkup:
 def stars_days_selection_kb(stars_per_day: int) -> InlineKeyboardMarkup:
     from bot.config import settings
 
-    presets = [7, 14, 30, 60, 90]
+    presets = [10, 14, 30, 60, 90]
     rows = []
     row = []
     for days in presets:
@@ -188,7 +188,7 @@ def stars_days_selection_kb(stars_per_day: int) -> InlineKeyboardMarkup:
 def days_selection_kb() -> InlineKeyboardMarkup:
     from bot.config import settings
 
-    presets = [7, 14, 30, 60, 90]
+    presets = [10, 14, 30, 60, 90]
     rows = []
     row = []
     for days in presets:
