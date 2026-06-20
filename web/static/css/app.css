@@ -216,6 +216,55 @@ body::before {
   color: #fca5a5;
 }
 
+.alert-warn {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fcd34d;
+}
+
+.alert-info {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
+}
+
+/* ── Channel subscription bonus card ── */
+.channel-bonus-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(36, 161, 222, 0.12), rgba(57, 232, 122, 0.08));
+  border: 1px solid rgba(36, 161, 222, 0.3);
+}
+
+.channel-bonus-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.channel-bonus-body { flex: 1; min-width: 0; }
+
+.channel-bonus-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.channel-bonus-text {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.channel-bonus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* ── Balance card (cabinet) ── */
 .balance-card {
   background: var(--bg-card);

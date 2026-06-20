@@ -131,6 +131,7 @@ async def _render_cabinet(
     via_session: bool,
 ):
     ctx = await build_cabinet_context(request, user, session, via_session=via_session)
+    ctx["bonus_status"] = request.query_params.get("bonus")
     return templates.TemplateResponse(request, "cabinet.html", ctx)
 
 
@@ -346,6 +347,53 @@ async def cabinet_device_remove(
     if needs_onboarding(user):
         return RedirectResponse(f"/cabinet/{token}/onboarding#connect", status_code=303)
     return RedirectResponse(f"/cabinet/{token}#devices", status_code=303)
+
+
+async def _handle_channel_bonus(session, user, redirect_to: str):
+    from bot.services.channel import (
+        GRANT_GRANTED,
+        grant_channel_bonus,
+    )
+    from bot.services.notify import notify_balance_credited
+
+    result = await grant_channel_bonus(session, user)
+    if result == GRANT_GRANTED:
+        try:
+            await notify_balance_credited(
+                user.telegram_id,
+                settings.channel_bonus_rub,
+                user.balance_rub,
+                comment="Бонус за подписку на канал",
+                user=user,
+            )
+        except Exception:
+            logger.exception("Failed to notify about channel bonus")
+    sep = "&" if "?" in redirect_to else "?"
+    return RedirectResponse(f"{redirect_to}{sep}bonus={result}#balance", status_code=303)
+
+
+@app.post("/cabinet/channel-bonus/check")
+async def cabinet_session_channel_bonus(
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+):
+    user = await get_user_from_session(request, session)
+    if not user:
+        return RedirectResponse("/auth/login", status_code=303)
+    return await _handle_channel_bonus(session, user, "/cabinet")
+
+
+@app.post("/cabinet/{token}/channel-bonus/check")
+async def cabinet_channel_bonus(
+    token: str,
+    session: AsyncSession = Depends(get_db),
+):
+    if not _is_cabinet_token(token):
+        return RedirectResponse("/cabinet", status_code=303)
+    user = await get_user_by_cabinet_token(session, token)
+    if not user:
+        return RedirectResponse("/", status_code=303)
+    return await _handle_channel_bonus(session, user, f"/cabinet/{token}")
 
 
 @app.get("/cabinet/devices/{device_id}/conf")

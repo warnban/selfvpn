@@ -50,6 +50,27 @@ def parse_link_token(message: Message) -> str | None:
     return None
 
 
+async def _try_channel_bonus(message: Message, session: AsyncSession, user) -> None:
+    """После привязки/проверки пробуем выдать бонус за подписку на канал."""
+    if not settings.channel_bonus_enabled or user.channel_bonus_paid:
+        return
+    from bot.services.channel import GRANT_GRANTED, GRANT_NOT_SUBSCRIBED, grant_channel_bonus
+
+    result = await grant_channel_bonus(session, user)
+    if result == GRANT_GRANTED:
+        await message.answer(
+            f"🎁 Бонус за подписку на канал: <b>+{settings.channel_bonus_rub:.0f} ₽</b>\n"
+            f"💰 Баланс: <b>{user.balance_rub:.0f} ₽</b>",
+            parse_mode="HTML",
+        )
+    elif result == GRANT_NOT_SUBSCRIBED:
+        await message.answer(
+            "Чтобы получить бонус, подпишитесь на канал "
+            f"{settings.channel_url} и нажмите «Проверить подписку» в личном кабинете.",
+            disable_web_page_preview=True,
+        )
+
+
 @router.message(CommandStart())
 async def cmd_start(message: Message, session: AsyncSession) -> None:
     link_token = parse_link_token(message)
@@ -82,6 +103,7 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
             parse_mode="HTML",
             disable_web_page_preview=True,
         )
+        await _try_channel_bonus(message, session, user)
         return
 
     referrer_tid = parse_referrer(message)

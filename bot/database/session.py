@@ -122,6 +122,8 @@ async def _migrate_sqlite(conn) -> None:
                 sync_conn.execute(text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT 0"))
             if "auth_provider" not in cols:
                 sync_conn.execute(text("ALTER TABLE users ADD COLUMN auth_provider VARCHAR(16) DEFAULT 'telegram'"))
+            if "channel_bonus_paid" not in cols:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN channel_bonus_paid BOOLEAN DEFAULT 0"))
             if "onboarding_completed" not in cols:
                 sync_conn.execute(text("ALTER TABLE users ADD COLUMN onboarding_completed BOOLEAN DEFAULT 0"))
                 if "devices" in inspector.get_table_names():

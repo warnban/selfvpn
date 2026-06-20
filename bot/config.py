@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     stars_per_day: int = 6
     stars_enabled: bool = True
 
+    bot_username: str = "anfikvpnbot"
+    # Бонус за подписку на Telegram-канал (разово).
+    tg_channel_username: str = "unclesanyainet"
+    channel_bonus_rub: float = 30.0
+
     panel_url: str = "http://127.0.0.1:5000"
     panel_api_token: str = ""
     panel_server_id: int = 0
@@ -85,6 +90,19 @@ class Settings(BaseSettings):
         if self.active_payment_provider == "cardlink":
             return self.cardlink_enabled
         return self.freekassa_enabled
+
+    @property
+    def channel_username_clean(self) -> str:
+        return (self.tg_channel_username or "").lstrip("@").strip()
+
+    @property
+    def channel_url(self) -> str:
+        handle = self.channel_username_clean
+        return f"https://t.me/{handle}" if handle else ""
+
+    @property
+    def channel_bonus_enabled(self) -> bool:
+        return bool(self.channel_username_clean and self.bot_token and self.channel_bonus_rub > 0)
 
     @property
     def admin_id_list(self) -> list[int]:

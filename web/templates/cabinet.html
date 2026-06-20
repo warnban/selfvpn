@@ -87,6 +87,40 @@
     </div>
   </div>
 
+  {% if bonus_status %}
+    {% if bonus_status == 'granted' %}
+      <div class="alert alert-success" id="balance">Готово! Начислено {{ "%.0f"|format(channel_bonus_rub) }} ₽ за подписку на канал 🎉</div>
+    {% elif bonus_status == 'already' %}
+      <div class="alert alert-info" id="balance">Бонус за подписку уже был получен ранее.</div>
+    {% elif bonus_status == 'not_subscribed' %}
+      <div class="alert alert-warn" id="balance">Не видим подписку на канал. Подпишитесь и нажмите «Проверить подписку» ещё раз.</div>
+    {% elif bonus_status == 'no_telegram' %}
+      <div class="alert alert-warn" id="balance">Сначала привяжите Telegram, чтобы получить бонус.</div>
+    {% elif bonus_status == 'error' %}
+      <div class="alert alert-warn" id="balance">Не удалось проверить подписку. Попробуйте позже.</div>
+    {% endif %}
+  {% endif %}
+
+  {% if show_channel_bonus %}
+  <div class="channel-bonus-card" id="channel-bonus">
+    <div class="channel-bonus-icon">🎁</div>
+    <div class="channel-bonus-body">
+      <p class="channel-bonus-title">Подпишись на наш Telegram-канал</p>
+      <p class="channel-bonus-text">и получи <strong>{{ "%.0f"|format(channel_bonus_rub) }} ₽</strong> на баланс (≈3 дня). Бонус разовый.</p>
+      <div class="channel-bonus-actions">
+        <a class="btn btn-sm" href="{{ channel_url }}" target="_blank" rel="noopener">Подписаться на канал</a>
+        {% if channel_link_bot_url %}
+          <a class="btn btn-sm btn-secondary" href="{{ channel_link_bot_url }}" target="_blank" rel="noopener">Привязать Telegram и забрать</a>
+        {% else %}
+          <form method="post" action="{{ cabinet_base }}/channel-bonus/check" style="margin:0;">
+            <button type="submit" class="btn btn-sm btn-secondary">Проверить подписку</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <section class="lk-section" id="devices">
     <div class="lk-section-head">
       <h2 class="lk-section-title">Мои устройства</h2>

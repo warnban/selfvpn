@@ -4,7 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
 from bot.database.models import User
-from bot.services.auth import user_display_name, requires_email_verification_for_device
+from bot.services.auth import (
+    user_display_name,
+    requires_email_verification_for_device,
+    make_telegram_link_token,
+)
 from bot.services.devices import (
     count_devices,
     days_left_for,
@@ -91,6 +95,12 @@ async def build_cabinet_context(
     bot_username = getattr(settings, "bot_username", None) or "anfikvpnbot"
     ref_tg = f"https://t.me/{bot_username}?start=ref_{user.telegram_id}" if user.telegram_id else None
 
+    show_channel_bonus = settings.channel_bonus_enabled and not user.channel_bonus_paid
+    channel_link_bot_url = None
+    if show_channel_bonus and not user.telegram_id:
+        token = make_telegram_link_token(user.id)
+        channel_link_bot_url = f"https://t.me/{bot_username}?start=link_{token}"
+
     return {
         "user": user,
         "display_name": user_display_name(user),
@@ -114,4 +124,8 @@ async def build_cabinet_context(
         "requires_email_verification": requires_email_verification_for_device(user),
         "login_url": settings.login_url(),
         "register_url": settings.register_url(),
+        "show_channel_bonus": show_channel_bonus,
+        "channel_url": settings.channel_url,
+        "channel_bonus_rub": settings.channel_bonus_rub,
+        "channel_link_bot_url": channel_link_bot_url,
     }
