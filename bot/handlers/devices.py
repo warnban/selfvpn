@@ -50,7 +50,8 @@ async def _devices_overview(session: AsyncSession, user) -> str:
     text = (
         "📱 <b>Мои устройства</b>\n\n"
         f"💰 Баланс: <b>{user.balance_rub:.0f} ₽</b>\n"
-        f"📅 Тариф: <b>{settings.daily_price_rub:.0f} ₽</b> за устройство в сутки\n"
+        f"📅 Тариф: <b>{settings.daily_price_rub:.0f} ₽/сутки</b> "
+        f"(до {settings.max_devices} устройств)\n"
         f"🔢 Устройств: <b>{len(devices)}</b> из {settings.max_devices}\n"
         f"💸 Списание: <b>{cost:.0f} ₽/сутки</b>\n"
         f"⏳ Хватит на: <b>~{left} дн.</b>\n\n"
@@ -106,12 +107,11 @@ async def cb_device_add(callback: CallbackQuery, session: AsyncSession) -> None:
         await callback.answer(f"Лимит {settings.max_devices} устройств", show_alert=True)
         return
 
-    new_cost = settings.daily_price_rub * (len(devices) + 1)
     await _safe_edit(
         callback.message,
         "Выбери платформу нового устройства.\n\n"
-        f"После добавления списание станет <b>{new_cost:.0f} ₽/сутки</b> "
-        f"({len(devices) + 1} устр. × {settings.daily_price_rub:.0f} ₽).",
+        f"Тариф остаётся <b>{settings.daily_price_rub:.0f} ₽/сутки</b> "
+        f"— до {settings.max_devices} устройств в одном аккаунте.",
         platform_choice_kb(),
     )
     await callback.answer()
@@ -208,11 +208,18 @@ async def cb_device_del(callback: CallbackQuery, session: AsyncSession) -> None:
         await callback.answer("Устройство не найдено", show_alert=True)
         return
 
+    devices = await list_devices(session, user)
+    del_hint = (
+        f"После удаления последнего устройства списание прекратится "
+        f"({settings.daily_price_rub:.0f} ₽/сутки)."
+        if len(devices) == 1
+        else f"Тариф не изменится — до {settings.max_devices} устройств по одной цене."
+    )
+
     await _safe_edit(
         callback.message,
         f"Удалить устройство «{device.name}»?\n\n"
-        "Ключ перестанет работать. Списание уменьшится на "
-        f"{settings.daily_price_rub:.0f} ₽/сутки.",
+        f"Ключ перестанет работать. {del_hint}",
         device_del_confirm_kb(device_id),
     )
     await callback.answer()

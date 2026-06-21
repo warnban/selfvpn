@@ -84,15 +84,15 @@
         <div class="alert alert-success device-created-banner ob-created-banner">✓ {% if use_conf %}Файл настроек готов{% else %}Ключ создан{% endif %} — {% if use_conf %}скачайте его ниже{% else %}скопируйте ниже{% endif %}</div>
         {% endif %}
         <p class="ob-device-badge">{{ icon }} {{ platform_label(d.platform) }}</p>
-        <h2 class="ob-title">{% if use_conf %}Скачайте файл{% else %}Скопируйте ключ{% endif %}</h2>
-        <p class="ob-lead">{% if use_conf %}Сохраните файл и откройте в AmneziaWG{% else %}Нажмите кнопку — ключ скопируется{% endif %}</p>
+        <h2 class="ob-title">Почти готово — осталось подключить</h2>
+        <p class="ob-lead">{% if use_conf %}Сначала установите приложение AmneziaWG, затем скачайте файл и откройте его в приложении. Делайте по шагам ниже.{% else %}Сначала установите приложение Amnezia, затем скопируйте ключ и вставьте в приложении. Делайте по шагам ниже.{% endif %}</p>
 
         {% if use_conf %}
         <a class="btn btn-hero btn-hero--download ob-main-action" href="{{ cabinet_base }}/devices/{{ d.id }}/conf">
           Скачать файл настроек
         </a>
         <ul class="ob-tips">
-          {% with platform=d.platform, use_conf=true %}
+          {% with platform=d.platform, use_conf=true, detailed=true %}
           {% include "_device_app_hint.html" %}
           {% endwith %}
         </ul>
@@ -109,7 +109,7 @@
           <span class="copy-btn-done" hidden>Скопировано ✓</span>
         </button>
         <ul class="ob-tips">
-          {% with platform=d.platform, use_conf=false %}
+          {% with platform=d.platform, use_conf=false, detailed=true %}
           {% include "_device_app_hint.html" %}
           {% endwith %}
         </ul>

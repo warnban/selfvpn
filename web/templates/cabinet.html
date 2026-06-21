@@ -82,7 +82,7 @@
       <div class="balance-meta">
         <span>{{ device_count }} устр. · {{ "%.0f"|format(daily_cost) }} ₽/сутки</span>
         <span class="{% if days_left <= 5 %}warn{% endif %}">
-          {% if days_left <= 5 %}⚠ Пополните скоро{% else %}{{ "%.0f"|format(daily_price) }} ₽ за устройство{% endif %}
+          {% if days_left <= 5 %}⚠ Пополните скоро{% else %}до {{ max_devices }} устр. в тарифе{% endif %}
         </span>
       </div>
       <p class="greeting">Привет, <strong>{{ display_name }}</strong>{% if user.username %} · @{{ user.username }}{% endif %}</p>
@@ -190,7 +190,7 @@
     {% if device_count < max_devices %}
     <div class="lk-add" id="add-device">
       <h3 class="lk-add-title">➕ Добавить устройство</h3>
-      <p class="lk-add-desc">{{ "%.0f"|format(daily_price) }} ₽/сутки за каждое новое</p>
+      <p class="lk-add-desc">До {{ max_devices }} устройств · {{ "%.0f"|format(daily_price) }} ₽/сутки за аккаунт</p>
       {% if requires_email_verification %}
       {% include "_email_verify_required.html" %}
       {% else %}

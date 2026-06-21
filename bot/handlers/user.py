@@ -168,7 +168,7 @@ async def cmd_menu(message: Message) -> None:
 async def cmd_terms(message: Message) -> None:
     await message.answer(
         f"📄 <b>Условия использования {settings.brand_name}</b>\n\n"
-        f"• Тариф: {settings.daily_price_rub:.0f} ₽ за устройство в сутки.\n"
+        f"• Тариф: {settings.daily_price_rub:.0f} ₽/сутки за аккаунт (до {settings.max_devices} устройств).\n"
         "• Баланс списывается ежедневно; при нулевом балансе доступ приостанавливается.\n"
         "• Оплата Stars и картой пополняет баланс; возврат — через поддержку.\n"
         "• Используя сервис, вы соглашаетесь с этими условиями.\n\n"

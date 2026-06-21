@@ -45,7 +45,10 @@ async def count_devices(session: AsyncSession, user: User) -> int:
 
 
 def daily_cost(device_count: int) -> float:
-    return round(settings.daily_price_rub * device_count, 2)
+    """Фиксированный тариф за аккаунт, пока подключено хотя бы одно устройство."""
+    if device_count <= 0:
+        return 0.0
+    return round(settings.daily_price_rub, 2)
 
 
 async def user_daily_cost(session: AsyncSession, user: User) -> float:
@@ -54,10 +57,9 @@ async def user_daily_cost(session: AsyncSession, user: User) -> float:
 
 async def days_left_for(session: AsyncSession, user: User) -> int:
     count = await count_devices(session, user)
-    # Без устройств показываем прогноз из расчёта на 1 устройство,
+    # Без устройств показываем прогноз по тарифу аккаунта,
     # чтобы пользователь видел, что баланс не «сгорел».
-    effective = count if count > 0 else 1
-    cost = settings.daily_price_rub * effective
+    cost = daily_cost(count if count > 0 else 1)
     if cost <= 0:
         return 0
     return int(user.balance_rub // cost)
@@ -88,13 +90,10 @@ async def add_device(
     if len(current) >= settings.max_devices:
         raise ValueError(f"Достигнут лимит устройств ({settings.max_devices}).")
 
-    # Нужен баланс минимум на 1 сутки при новом количестве устройств
-    new_count = len(current) + 1
-    required = daily_cost(new_count)
-    if user.balance_rub < required:
+    if user.balance_rub < settings.daily_price_rub:
         raise ValueError(
-            f"Недостаточно средств. Для {new_count} устройств(а) нужно "
-            f"минимум {required:.0f} ₽ на балансе (хватит на 1 сутки)."
+            f"Недостаточно средств. Нужно минимум {settings.daily_price_rub:.0f} ₽ на балансе "
+            f"(тариф {settings.daily_price_rub:.0f} ₽/сутки, до {settings.max_devices} устройств)."
         )
 
     platform = normalize_platform(platform)

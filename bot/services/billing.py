@@ -21,7 +21,7 @@ async def _devices_of(session: AsyncSession, user: User) -> list[Device]:
 
 
 async def process_daily_billing() -> None:
-    """Списывает тариф × число устройств. При нехватке удаляет устройства (новые первыми)."""
+    """Списывает фиксированный тариф за аккаунт. При нехватке отключает все устройства."""
     async with async_session() as session:
         users = (await session.execute(select(User))).scalars().all()
         now = datetime.utcnow()
@@ -38,19 +38,17 @@ async def process_daily_billing() -> None:
                 continue
 
             removed: list[str] = []
-            # Удаляем новейшие устройства, пока баланс не покрывает стоимость суток
-            while devices and user.balance_rub < price * len(devices):
-                victim = devices.pop(0)  # новейшее (сортировка desc)
-                if victim.vpn_client_id:
-                    try:
-                        await panel_client.remove_client(victim.vpn_client_id)
-                    except Exception as exc:
-                        logger.warning("Не удалось удалить peer %s: %s", victim.vpn_client_id, exc)
-                removed.append(victim.name)
-                await session.delete(victim)
-
-            if devices:
-                user.balance_rub -= price * len(devices)
+            if user.balance_rub < price:
+                for victim in devices:
+                    if victim.vpn_client_id:
+                        try:
+                            await panel_client.remove_client(victim.vpn_client_id)
+                        except Exception as exc:
+                            logger.warning("Не удалось удалить peer %s: %s", victim.vpn_client_id, exc)
+                    removed.append(victim.name)
+                    await session.delete(victim)
+            else:
+                user.balance_rub -= price
 
             if removed:
                 await session.commit()

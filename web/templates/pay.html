@@ -9,7 +9,7 @@
     <div class="brand-icon">💳</div>
     <div>
       <h1>Пополнение</h1>
-      <p>{{ daily_price }} ₽/сутки</p>
+      <p>{{ daily_price }} ₽/сутки · до {{ max_devices }} устр.</p>
     </div>
   </div>
   <a class="link" href="{{ cabinet_base | default('/cabinet/' ~ user.cabinet_token) }}">← Кабинет</a>
@@ -66,7 +66,7 @@
 
     {% if online_payment_enabled %}
     <p class="muted" style="margin-bottom:20px">
-      Сумма считается по тарифу {{ daily_price }} ₽/сутки.
+      Сумма считается по тарифу {{ daily_price }} ₽/сутки за аккаунт (до {{ max_devices }} устройств).
       {% if min_topup and min_topup > 0 %}Минимум — {{ min_topup|int }} ₽.{% endif %}
       После оплаты баланс зачислится автоматически — без скриншотов и ожидания админа.
     </p>

@@ -1,9 +1,21 @@
-{# platform, use_conf — list items for download + connect steps #}
-<li>
-  <a href="{{ app_download_url(platform) }}" target="_blank" rel="noopener">{{ app_download_label(platform) }}</a>
-</li>
+{# platform, use_conf, detailed — инструкция «скачать приложение → вставить» #}
+{% if detailed %}
 {% if use_conf %}
-<li>«Добавить туннель» → «Из файла» → <strong>Подключить</strong></li>
+<li><strong>1.</strong> Установите приложение: <a href="{{ app_download_url(platform) }}" target="_blank" rel="noopener">{{ app_download_label(platform) }}</a></li>
+<li><strong>2.</strong> Вернитесь сюда и нажмите кнопку <strong>«Скачать файл настроек»</strong> выше — файл сохранится в телефон/компьютер</li>
+<li><strong>3.</strong> Откройте приложение <strong>AmneziaWG</strong> → «Добавить туннель» → «Из файла или архива» → выберите скачанный файл</li>
+<li><strong>4.</strong> Включите переключатель — когда появится «Подключено», интернет уже идёт через VPN</li>
 {% else %}
-<li>➕ → «Вставить ключ» → <strong>Подключить</strong></li>
+<li><strong>1.</strong> Установите приложение: <a href="{{ app_download_url(platform) }}" target="_blank" rel="noopener">{{ app_download_label(platform) }}</a></li>
+<li><strong>2.</strong> Вернитесь сюда и нажмите кнопку <strong>«Скопировать ключ»</strong> выше</li>
+<li><strong>3.</strong> Откройте приложение <strong>Amnezia</strong> → значок <strong>«+»</strong> вверху → «Вставить ключ из буфера обмена»</li>
+<li><strong>4.</strong> Нажмите большую кнопку подключения — когда загорится «Подключено», всё работает</li>
+{% endif %}
+{% else %}
+<li><a href="{{ app_download_url(platform) }}" target="_blank" rel="noopener">{{ app_download_label(platform) }}</a></li>
+{% if use_conf %}
+<li>Откройте AmneziaWG → «Добавить туннель» → «Из файла» → <strong>Подключить</strong></li>
+{% else %}
+<li>Откройте Amnezia → «+» → «Вставить ключ» → <strong>Подключить</strong></li>
+{% endif %}
 {% endif %}

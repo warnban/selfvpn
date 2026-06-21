@@ -111,7 +111,7 @@ async def stars_topup_start(message: Message, state: FSMContext, session: AsyncS
         "⭐ <b>Пополнение через Telegram Stars</b>\n\n"
         f"{promo_line}"
         f"Тариф: <b>{settings.daily_price_rub:.0f} ₽/сутки</b> "
-        f"(≈ <b>{stars_day} ⭐/сутки</b>)\n\n"
+        f"(до {settings.max_devices} устр., ≈ <b>{stars_day} ⭐/сутки</b>)\n\n"
         "Выбери срок — придёт счёт на оплату Stars прямо в Telegram.",
         reply_markup=stars_days_selection_kb(stars_day),
         parse_mode="HTML",
