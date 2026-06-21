@@ -2186,6 +2186,37 @@ label {
   color: var(--muted);
 }
 
+.partner-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.partner-stat {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 10px;
+  text-align: center;
+}
+
+.partner-stat-value {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.partner-stat-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.6875rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .lk-device {
   background: var(--bg-secondary);
   border: 1px solid var(--border);

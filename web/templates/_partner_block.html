@@ -1,0 +1,21 @@
+{# partner, referral_web_link, referral_tg_link #}
+<section class="lk-section partner-card" id="partner">
+  <div class="lk-section-head">
+    <h2 class="lk-section-title">💼 Партнёрская программа</h2>
+    <span class="lk-section-count">{{ "%.0f"|format(partner.commission_pct) }}%</span>
+  </div>
+  <p class="muted">Вы получаете <strong>{{ "%.0f"|format(partner.commission_pct) }}%</strong> с каждого пополнения приглашённых пользователей.</p>
+  <div class="partner-stats">
+    <div class="partner-stat"><span class="partner-stat-value">{{ partner.referrals_count }}</span><span class="partner-stat-label">приглашено</span></div>
+    <div class="partner-stat"><span class="partner-stat-value">{{ partner.referrals_paid_count }}</span><span class="partner-stat-label">пополнили</span></div>
+    <div class="partner-stat"><span class="partner-stat-value">{{ "%.0f"|format(partner.balance_rub) }} ₽</span><span class="partner-stat-label">к выплате</span></div>
+  </div>
+  <p class="lk-add-desc" style="margin-top:16px"><strong>Ваша партнёрская ссылка</strong> — все регистрации по ней ваши:</p>
+  <button type="button" class="btn btn-secondary btn-block copy-btn" data-target="refLinkPartner">Скопировать ссылку для сайта</button>
+  <textarea class="key-box-hidden" id="refLinkPartner" readonly aria-hidden="true">{{ referral_web_link }}</textarea>
+  {% if referral_tg_link %}
+  <button type="button" class="btn btn-secondary btn-block copy-btn" data-target="refLinkPartnerTg" style="margin-top:8px">Скопировать ссылку для Telegram</button>
+  <textarea class="key-box-hidden" id="refLinkPartnerTg" readonly aria-hidden="true">{{ referral_tg_link }}</textarea>
+  {% endif %}
+  <p class="muted" style="margin-top:12px">Выплачено всего: {{ "%.0f"|format(partner.paid_out_total_rub) }} ₽ · платежей: {{ partner.topups_count }}. Выплаты — через поддержку.</p>
+</section>

@@ -4,7 +4,8 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import settings
-from bot.keyboards.main import BTN_ABOUT, BTN_CABINET, BTN_INVITE, BTN_SUPPORT, invite_kb, menu_for
+from bot.database.models import User
+from bot.keyboards.main import BTN_ABOUT, BTN_CABINET, BTN_INVITE, BTN_PARTNER, BTN_SUPPORT, invite_kb, menu_for
 from bot.messages import cabinet_intro, new_user_welcome
 from bot.services.devices import count_devices, days_left_for
 from bot.services.auth import link_telegram_to_user, load_telegram_link_user_id
@@ -12,6 +13,10 @@ from bot.services.users import count_referrals, get_user_by_telegram_id, registe
 from bot.services.partners import get_partner_stats
 
 router = Router()
+
+
+def _menu_for_user(user: User | None, telegram_id: int):
+    return menu_for(telegram_id, is_partner=bool(user and user.partner_enabled))
 
 
 def parse_start_payload(message: Message) -> tuple[str | None, int | None]:
@@ -112,7 +117,7 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
         lines.append(f"🌐 <a href=\"{cabinet_link}\">Личный кабинет</a>")
         await message.answer(
             "\n".join(lines),
-            reply_markup=menu_for(message.from_user.id),
+            reply_markup=_menu_for_user(user, message.from_user.id),
             parse_mode="HTML",
             disable_web_page_preview=True,
         )
@@ -143,7 +148,7 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
         )
         await message.answer(
             intro,
-            reply_markup=menu_for(message.from_user.id),
+            reply_markup=_menu_for_user(user, message.from_user.id),
             parse_mode="HTML",
             disable_web_page_preview=True,
         )
@@ -156,13 +161,14 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
             f"📱 Устройств: <b>{devices}</b>\n\n"
             f"🌐 <a href=\"{cabinet_link}\">Личный кабинет</a> — ключи и настройка подключения"
         )
-        await message.answer(text, reply_markup=menu_for(message.from_user.id), parse_mode="HTML")
+        await message.answer(text, reply_markup=_menu_for_user(user, message.from_user.id), parse_mode="HTML")
 
 
 @router.message(Command("menu"))
-async def cmd_menu(message: Message) -> None:
+async def cmd_menu(message: Message, session: AsyncSession) -> None:
     """Обновить клавиатуру (если кнопки устарели)."""
-    await message.answer("Меню обновлено 👇", reply_markup=menu_for(message.from_user.id))
+    user = await get_user_by_telegram_id(session, message.from_user.id)
+    await message.answer("Меню обновлено 👇", reply_markup=_menu_for_user(user, message.from_user.id))
 
 
 @router.message(Command("terms"))
@@ -228,11 +234,12 @@ async def legacy_menu_buttons(message: Message, session: AsyncSession) -> None:
     if message.text in {"ℹ️ Помощь", "🔐 Подключить", "Подключить", "🔐 Подключить VPN", "Подключить VPN"}:
         extra = f"\n\n{amnezia_setup_steps()}"
 
+    user = await get_user_by_telegram_id(session, message.from_user.id)
     await message.answer(
         "Эта кнопка больше не в меню — всё в <b>личном кабинете</b>."
         f"{extra}\n\n"
         "Нажми /menu чтобы обновить клавиатуру.",
-        reply_markup=menu_for(message.from_user.id),
+        reply_markup=_menu_for_user(user, message.from_user.id),
         parse_mode="HTML",
         disable_web_page_preview=True,
     )
@@ -246,6 +253,8 @@ async def show_cabinet(message: Message, session: AsyncSession) -> None:
         await message.answer("Сначала нажми /start")
         return
     link = settings.cabinet_url(user.cabinet_token)
+    if user.partner_enabled:
+        link += "#partner"
     devices = await count_devices(session, user)
     left = await days_left_for(session, user)
     await message.answer(
@@ -255,7 +264,7 @@ async def show_cabinet(message: Message, session: AsyncSession) -> None:
     )
 
 
-@router.message(F.text.in_({BTN_INVITE, "👥 Рефералы"}))
+@router.message(F.text.in_({BTN_INVITE, "👥 Рефералы", BTN_PARTNER}))
 async def show_invite(message: Message, session: AsyncSession) -> None:
     user = await get_user_by_telegram_id(session, message.from_user.id)
     if not user:
@@ -274,6 +283,7 @@ async def show_invite(message: Message, session: AsyncSession) -> None:
             f"Ваш %: <b>{partner['commission_pct']:.0f}%</b> с каждого пополнения приглашённых.\n"
             f"Приглашено: <b>{ref_count}</b> · пополнили: <b>{partner['referrals_paid_count']}</b> · "
             f"к выплате: <b>{partner['balance_rub']:.0f} ₽</b>\n\n"
+            "Полная статистика — в личном кабинете (кнопка «Личный кабинет»).\n\n"
             "<b>Ваша ссылка для Telegram</b> — кнопки ниже 👇\n"
             f"<code>{ref_link}</code>\n\n"
             f"<b>Ссылка для сайта:</b>\n<code>{ref_web}</code>"

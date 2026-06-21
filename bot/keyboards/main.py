@@ -7,6 +7,7 @@ from bot.messages import AMNEZIA_ANDROID, AMNEZIA_WINDOWS, AMNEZIA_WG_APPLE
 BTN_CABINET = "🌐 Личный кабинет"
 BTN_TOPUP = "⭐ Пополнить"
 BTN_INVITE = "👥 Пригласить"
+BTN_PARTNER = "💼 Партнёрка"
 BTN_ABOUT = "ℹ️ О сервисе"
 BTN_SUPPORT = "🆘 Поддержка"
 BTN_ADMIN = "⚙️ ADM PANEL"
@@ -26,13 +27,16 @@ LEGACY_MENU_BUTTONS = frozenset({
 })
 
 
-def main_menu(*, is_admin: bool = False) -> ReplyKeyboardMarkup:
+def main_menu(*, is_admin: bool = False, is_partner: bool = False) -> ReplyKeyboardMarkup:
     from bot.config import settings
 
     rows = [
         [KeyboardButton(text=BTN_CABINET), KeyboardButton(text=BTN_TOPUP)],
-        [KeyboardButton(text=BTN_INVITE)],
     ]
+    if is_partner:
+        rows.append([KeyboardButton(text=BTN_PARTNER)])
+    else:
+        rows.append([KeyboardButton(text=BTN_INVITE)])
     about_url = f"{settings.web_base_url.rstrip('/')}/about"
     if about_url.startswith("https://"):
         rows.append([KeyboardButton(text=BTN_ABOUT, url=about_url)])
@@ -48,10 +52,10 @@ def main_menu(*, is_admin: bool = False) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
 
 
-def menu_for(telegram_id: int) -> ReplyKeyboardMarkup:
+def menu_for(telegram_id: int, *, is_partner: bool = False) -> ReplyKeyboardMarkup:
     from bot.config import is_admin
 
-    return main_menu(is_admin=is_admin(telegram_id))
+    return main_menu(is_admin=is_admin(telegram_id), is_partner=is_partner)
 
 
 def news_confirm_kb() -> InlineKeyboardMarkup:
