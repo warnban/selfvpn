@@ -133,6 +133,14 @@ async def _migrate_sqlite(conn) -> None:
                             "WHERE id IN (SELECT DISTINCT user_id FROM devices)"
                         )
                     )
+            if "partner_enabled" not in cols:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN partner_enabled BOOLEAN DEFAULT 0"))
+            if "partner_commission_pct" not in cols:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN partner_commission_pct FLOAT DEFAULT 0"))
+            if "partner_balance_rub" not in cols:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN partner_balance_rub FLOAT DEFAULT 0"))
+            if "partner_paid_out_total_rub" not in cols:
+                sync_conn.execute(text("ALTER TABLE users ADD COLUMN partner_paid_out_total_rub FLOAT DEFAULT 0"))
             _rebuild_users_telegram_nullable(sync_conn, inspector)
             rows = sync_conn.execute(text("SELECT id FROM users WHERE cabinet_token IS NULL OR cabinet_token = ''")).fetchall()
             for (user_id,) in rows:

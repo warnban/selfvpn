@@ -43,6 +43,11 @@ from bot.services.users import (
     count_all_referrals,
     reject_payment,
 )
+from bot.services.partners import (
+    build_admin_partner_stats,
+    record_partner_payout,
+    set_partner_config,
+)
 
 from bot.services.freekassa import (
     FreekassaApiError,
@@ -1092,6 +1097,7 @@ async def admin_dashboard(request: Request, session: AsyncSession = Depends(get_
     stars_per_day = await get_stars_per_day(session)
     deposit_multiplier = await get_deposit_multiplier(session)
     min_topup = await get_min_topup(session)
+    partner_stats = await build_admin_partner_stats(session, users)
 
     return templates.TemplateResponse(
         request,
@@ -1108,6 +1114,7 @@ async def admin_dashboard(request: Request, session: AsyncSession = Depends(get_
             "allowed_multipliers": ALLOWED_DEPOSIT_MULTIPLIERS,
             "active_vpn": active_vpn,
             "device_counts": device_counts,
+            "partner_stats": partner_stats,
         },
     )
 
@@ -1150,6 +1157,57 @@ async def admin_credit(
         user=user,
     )
     return RedirectResponse("/admin?credited=1", status_code=303)
+
+
+@app.post("/admin/users/{user_id}/partner")
+async def admin_set_partner(
+    request: Request,
+    user_id: int,
+    enabled: str = Form("0"),
+    commission_pct: float = Form(0.0),
+    session: AsyncSession = Depends(get_db),
+):
+    if not is_admin(request):
+        return RedirectResponse("/admin/login", status_code=303)
+
+    user = await get_user_by_id(session, user_id)
+    if not user:
+        return RedirectResponse("/admin", status_code=303)
+
+    await set_partner_config(
+        session,
+        user,
+        enabled=enabled in ("1", "true", "on", "yes"),
+        commission_pct=commission_pct,
+    )
+    return RedirectResponse("/admin?partner_saved=1#partners", status_code=303)
+
+
+@app.post("/admin/users/{user_id}/partner-payout")
+async def admin_partner_payout(
+    request: Request,
+    user_id: int,
+    amount: float = Form(...),
+    comment: str = Form(""),
+    session: AsyncSession = Depends(get_db),
+):
+    if not is_admin(request):
+        return RedirectResponse("/admin/login", status_code=303)
+
+    user = await get_user_by_id(session, user_id)
+    if not user:
+        return RedirectResponse("/admin", status_code=303)
+
+    try:
+        await record_partner_payout(session, user, amount, comment or None)
+    except ValueError as exc:
+        from urllib.parse import quote
+
+        return RedirectResponse(
+            f"/admin?partner_error={quote(str(exc)[:120])}#partners",
+            status_code=303,
+        )
+    return RedirectResponse("/admin?partner_paid=1#partners", status_code=303)
 
 
 @app.post("/admin/payments/{payment_id}/approve")

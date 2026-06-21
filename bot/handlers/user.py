@@ -9,6 +9,7 @@ from bot.messages import cabinet_intro, new_user_welcome
 from bot.services.devices import count_devices, days_left_for
 from bot.services.auth import link_telegram_to_user, load_telegram_link_user_id
 from bot.services.users import count_referrals, get_user_by_telegram_id, register_user
+from bot.services.partners import get_partner_stats
 
 router = Router()
 
@@ -263,14 +264,31 @@ async def show_invite(message: Message, session: AsyncSession) -> None:
 
     bot_username = (await message.bot.get_me()).username
     ref_link = f"https://t.me/{bot_username}?start=ref_{user.telegram_id}"
+    ref_web = settings.register_url(ref=user.id)
     ref_count = await count_referrals(session, user)
 
+    if user.partner_enabled:
+        partner = await get_partner_stats(session, user)
+        text = (
+            f"💼 <b>Партнёрская программа</b>\n\n"
+            f"Ваш %: <b>{partner['commission_pct']:.0f}%</b> с каждого пополнения приглашённых.\n"
+            f"Приглашено: <b>{ref_count}</b> · пополнили: <b>{partner['referrals_paid_count']}</b> · "
+            f"к выплате: <b>{partner['balance_rub']:.0f} ₽</b>\n\n"
+            "<b>Ваша ссылка для Telegram</b> — кнопки ниже 👇\n"
+            f"<code>{ref_link}</code>\n\n"
+            f"<b>Ссылка для сайта:</b>\n<code>{ref_web}</code>"
+        )
+    else:
+        text = (
+            f"👥 <b>Пригласить друга</b>\n\n"
+            "Нажми <b>«Скопировать ссылку»</b> — она попадёт в буфер обмена.\n"
+            "Или <b>«Поделиться»</b>, чтобы отправить другу в Telegram.\n\n"
+            f"За каждого нового пользователя — <b>+{settings.referral_bonus_rub:.0f} ₽</b> на баланс.\n"
+            f"Приглашено: <b>{ref_count}</b> чел."
+        )
+
     await message.answer(
-        f"👥 <b>Пригласить друга</b>\n\n"
-        "Нажми <b>«Скопировать ссылку»</b> — она попадёт в буфер обмена.\n"
-        "Или <b>«Поделиться»</b>, чтобы отправить другу в Telegram.\n\n"
-        f"За каждого нового пользователя — <b>+{settings.referral_bonus_rub:.0f} ₽</b> на баланс.\n"
-        f"Приглашено: <b>{ref_count}</b> чел.",
+        text,
         reply_markup=invite_kb(ref_link),
         parse_mode="HTML",
     )

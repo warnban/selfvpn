@@ -16,6 +16,7 @@ from bot.services.devices import (
     user_daily_cost,
 )
 from bot.services.users import count_referrals, get_user_by_cabinet_token, get_user_by_id
+from bot.services.partners import get_partner_stats
 
 
 def get_session_user_id(request: Request) -> int | None:
@@ -101,6 +102,10 @@ async def build_cabinet_context(
         token = make_telegram_link_token(user.id)
         channel_link_bot_url = f"https://t.me/{bot_username}?start=link_{token}"
 
+    partner = None
+    if user.partner_enabled:
+        partner = await get_partner_stats(db, user)
+
     return {
         "user": user,
         "display_name": user_display_name(user),
@@ -128,4 +133,5 @@ async def build_cabinet_context(
         "channel_url": settings.channel_url,
         "channel_bonus_rub": settings.channel_bonus_rub,
         "channel_link_bot_url": channel_link_bot_url,
+        "partner": partner,
     }

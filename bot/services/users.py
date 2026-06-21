@@ -230,6 +230,10 @@ async def approve_payment(session: AsyncSession, payment: Payment) -> tuple[User
         payment.admin_comment = (
             f"{payment.admin_comment}\n{note}" if payment.admin_comment else note
         )
+    if user:
+        from bot.services.partners import accrue_partner_commission
+
+        await accrue_partner_commission(session, payment, user)
     await session.commit()
     if user:
         await session.refresh(user)

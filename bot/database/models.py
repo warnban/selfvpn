@@ -39,6 +39,10 @@ class User(Base):
     referral_bonus_paid: Mapped[bool] = mapped_column(Boolean, default=False)
     channel_bonus_paid: Mapped[bool] = mapped_column(Boolean, default=False)
     onboarding_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    partner_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    partner_commission_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    partner_balance_rub: Mapped[float] = mapped_column(Float, default=0.0)
+    partner_paid_out_total_rub: Mapped[float] = mapped_column(Float, default=0.0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_billed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
@@ -106,3 +110,26 @@ class Referral(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     referrer: Mapped["User"] = relationship(back_populates="referrals", foreign_keys=[referrer_id])
+
+
+class PartnerCommission(Base):
+    __tablename__ = "partner_commissions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    partner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    referred_user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    payment_id: Mapped[int] = mapped_column(ForeignKey("payments.id"), unique=True, index=True)
+    payment_amount_rub: Mapped[float] = mapped_column(Float)
+    commission_pct: Mapped[float] = mapped_column(Float)
+    commission_rub: Mapped[float] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PartnerPayout(Base):
+    __tablename__ = "partner_payouts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    partner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    amount_rub: Mapped[float] = mapped_column(Float)
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

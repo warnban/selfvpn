@@ -220,8 +220,9 @@
   </section>
 
   <details class="extras-fold">
-    <summary>Рефералы и поддержка</summary>
+    <summary>{% if partner %}Партнёрская программа и поддержка{% else %}Рефералы и поддержка{% endif %}</summary>
     <div class="extras-fold-body">
+      {% if not partner %}
       <div class="extras-block">
         <h4>👥 Пригласить друга</h4>
         <p class="muted">+{{ referral_bonus }} ₽ · приглашено: {{ referrals }}</p>
@@ -231,6 +232,28 @@
         <p class="muted" style="margin-top:8px"><a href="{{ referral_tg_link }}" target="_blank" rel="noopener">Пригласить в Telegram</a></p>
         {% endif %}
       </div>
+      {% endif %}
+      {% if partner %}
+      <div class="extras-block">
+        <h4>💼 Партнёрская программа</h4>
+        <p class="muted">Ваш процент: <strong>{{ "%.0f"|format(partner.commission_pct) }}%</strong> с каждого пополнения приглашённых</p>
+        <p class="muted" style="margin-top:12px"><strong>Ваша партнёрская ссылка</strong> — отправьте другу, все регистрации по ней будут вашими:</p>
+        <button type="button" class="btn btn-secondary btn-block copy-btn" data-target="refLinkPartner">Скопировать ссылку для сайта</button>
+        <textarea class="key-box-hidden" id="refLinkPartner" readonly aria-hidden="true">{{ referral_web_link }}</textarea>
+        {% if referral_tg_link %}
+        <button type="button" class="btn btn-secondary btn-block copy-btn" data-target="refLinkPartnerTg" style="margin-top:8px">Скопировать ссылку для Telegram</button>
+        <textarea class="key-box-hidden" id="refLinkPartnerTg" readonly aria-hidden="true">{{ referral_tg_link }}</textarea>
+        {% endif %}
+        <ul class="muted" style="margin:12px 0 0;padding-left:18px">
+          <li>Приглашено: {{ partner.referrals_count }}</li>
+          <li>Пополнили баланс: {{ partner.referrals_paid_count }} чел.</li>
+          <li>Платежей: {{ partner.topups_count }}</li>
+          <li>К выплате: <strong>{{ "%.0f"|format(partner.balance_rub) }} ₽</strong></li>
+          <li>Выплачено всего: {{ "%.0f"|format(partner.paid_out_total_rub) }} ₽</li>
+        </ul>
+        <p class="muted">Выплаты — через поддержку. Баланс обновляется автоматически после каждого пополнения реферала.</p>
+      </div>
+      {% endif %}
       <a class="panel panel-link" href="/about"><span>О сервисе</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a>
       <a class="panel panel-link" href="{{ support_tg_url }}" target="_blank" rel="noopener"><span>Поддержка</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a>
     </div>
