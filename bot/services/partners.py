@@ -3,9 +3,25 @@ import logging
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.database.models import PartnerCommission, PartnerPayout, Payment, PaymentStatus, Referral, User
+from bot.database.models import PartnerCommission, PartnerPayout, Payment, PaymentStatus, User
 
 logger = logging.getLogger(__name__)
+
+
+async def _is_first_approved_topup(
+    session: AsyncSession,
+    payer: User,
+    payment: Payment,
+) -> bool:
+    """True, если это первое успешное пополнение баланса пользователя."""
+    result = await session.execute(
+        select(func.count(Payment.id)).where(
+            Payment.user_id == payer.id,
+            Payment.status == PaymentStatus.APPROVED.value,
+            Payment.id != payment.id,
+        )
+    )
+    return int(result.scalar_one() or 0) == 0
 
 
 async def accrue_partner_commission(
@@ -13,7 +29,7 @@ async def accrue_partner_commission(
     payment: Payment,
     payer: User,
 ) -> PartnerCommission | None:
-    """Начисляет партнёру % с фактической суммы пополнения реферала."""
+    """Начисляет партнёру % только с первого успешного пополнения реферала."""
     if not payer.referrer_id:
         return None
 
@@ -21,10 +37,25 @@ async def accrue_partner_commission(
     if not partner or not partner.partner_enabled or partner.partner_commission_pct <= 0:
         return None
 
+    if payment.status != PaymentStatus.APPROVED.value:
+        return None
+
+    if not await _is_first_approved_topup(session, payer, payment):
+        return None
+
     existing = await session.execute(
         select(PartnerCommission).where(PartnerCommission.payment_id == payment.id)
     )
     if existing.scalar_one_or_none():
+        return None
+
+    existing_for_referred = await session.execute(
+        select(PartnerCommission.id).where(
+            PartnerCommission.partner_id == partner.id,
+            PartnerCommission.referred_user_id == payer.id,
+        ).limit(1)
+    )
+    if existing_for_referred.scalar_one_or_none():
         return None
 
     commission = round(payment.amount_rub * partner.partner_commission_pct / 100, 2)
@@ -94,12 +125,13 @@ async def record_partner_payout(
 
 
 async def count_referred_with_topups(session: AsyncSession, partner_id: int) -> int:
+    """Сколько приглашённых сделали хотя бы одно успешное пополнение."""
     result = await session.execute(
         select(func.count(func.distinct(Payment.user_id)))
         .select_from(Payment)
-        .join(Referral, Referral.referred_id == Payment.user_id)
+        .join(User, User.id == Payment.user_id)
         .where(
-            Referral.referrer_id == partner_id,
+            User.referrer_id == partner_id,
             Payment.status == PaymentStatus.APPROVED.value,
         )
     )

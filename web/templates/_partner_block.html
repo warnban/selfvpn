@@ -4,7 +4,7 @@
     <h2 class="lk-section-title">💼 Партнёрская программа</h2>
     <span class="lk-section-count">{{ "%.0f"|format(partner.commission_pct) }}%</span>
   </div>
-  <p class="muted">Вы получаете <strong>{{ "%.0f"|format(partner.commission_pct) }}%</strong> с каждого пополнения приглашённых пользователей.</p>
+  <p class="muted">Вы получаете <strong>{{ "%.0f"|format(partner.commission_pct) }}%</strong> с пополнений приглашённых.</p>
   <div class="partner-stats">
     <div class="partner-stat"><span class="partner-stat-value">{{ partner.referrals_count }}</span><span class="partner-stat-label">приглашено</span></div>
     <div class="partner-stat"><span class="partner-stat-value">{{ partner.referrals_paid_count }}</span><span class="partner-stat-label">пополнили</span></div>
@@ -17,5 +17,5 @@
   <button type="button" class="btn btn-secondary btn-block copy-btn" data-target="refLinkPartnerTg" style="margin-top:8px">Скопировать ссылку для Telegram</button>
   <textarea class="key-box-hidden" id="refLinkPartnerTg" readonly aria-hidden="true">{{ referral_tg_link }}</textarea>
   {% endif %}
-  <p class="muted" style="margin-top:12px">Выплачено всего: {{ "%.0f"|format(partner.paid_out_total_rub) }} ₽ · платежей: {{ partner.topups_count }}. Выплаты — через поддержку.</p>
+  <p class="muted" style="margin-top:12px">Выплачено всего: {{ "%.0f"|format(partner.paid_out_total_rub) }} ₽ · пополнений: {{ partner.topups_count }}. Выплаты — через поддержку.</p>
 </section>

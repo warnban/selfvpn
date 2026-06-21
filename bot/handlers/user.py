@@ -280,7 +280,7 @@ async def show_invite(message: Message, session: AsyncSession) -> None:
         partner = await get_partner_stats(session, user)
         text = (
             f"💼 <b>Партнёрская программа</b>\n\n"
-            f"Ваш %: <b>{partner['commission_pct']:.0f}%</b> с каждого пополнения приглашённых.\n"
+            f"Ваш %: <b>{partner['commission_pct']:.0f}%</b> с пополнений приглашённых.\n"
             f"Приглашено: <b>{ref_count}</b> · пополнили: <b>{partner['referrals_paid_count']}</b> · "
             f"к выплате: <b>{partner['balance_rub']:.0f} ₽</b>\n\n"
             "Полная статистика — в личном кабинете (кнопка «Личный кабинет»).\n\n"
