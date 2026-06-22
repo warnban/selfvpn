@@ -1088,12 +1088,15 @@ async def admin_dashboard(request: Request, session: AsyncSession = Depends(get_
     top_referrers = await list_top_referrers(session, limit=10)
 
     from bot.database.models import Device
+    from bot.services.panel import panel_client
 
     devices = (await session.execute(select(Device))).scalars().all()
     device_counts: dict[int, int] = {}
     for d in devices:
         device_counts[d.user_id] = device_counts.get(d.user_id, 0) + 1
     active_vpn = len(devices)
+    known_client_ids = {d.vpn_client_id for d in devices if d.vpn_client_id}
+    vpn_online = await panel_client.count_online_clients(known_client_ids)
     stars_per_day = await get_stars_per_day(session)
     deposit_multiplier = await get_deposit_multiplier(session)
     min_topup = await get_min_topup(session)
@@ -1113,6 +1116,7 @@ async def admin_dashboard(request: Request, session: AsyncSession = Depends(get_
             "min_topup": min_topup,
             "allowed_multipliers": ALLOWED_DEPOSIT_MULTIPLIERS,
             "active_vpn": active_vpn,
+            "vpn_online": vpn_online,
             "device_counts": device_counts,
             "partner_stats": partner_stats,
         },

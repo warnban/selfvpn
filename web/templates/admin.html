@@ -90,6 +90,27 @@
 
   <div class="admin-stat-card">
     <div class="admin-stat-top">
+      <span class="admin-stat-label">Онлайн сейчас</span>
+      <div class="admin-stat-icon" style="background:rgba(76,200,120,0.12)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#4cc878" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><path d="M12 20h.01"/><circle cx="12" cy="12" r="1"/>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <div class="admin-stat-value">{% if vpn_online is not none %}{{ vpn_online }}{% else %}—{% endif %}</div>
+      <div class="admin-stat-sub">
+        {% if vpn_online is not none %}
+          из {{ active_vpn }} устройств · handshake ≤ 3 мин
+        {% else %}
+          панель недоступна
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-stat-card">
+    <div class="admin-stat-top">
       <span class="admin-stat-label">Рефералов</span>
       <div class="admin-stat-icon" style="background:rgba(93,232,200,0.12)">
         <svg viewBox="0 0 24 24" fill="none" stroke="#5de8c8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
