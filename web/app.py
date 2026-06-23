@@ -52,10 +52,13 @@ from bot.services.partners import (
 from bot.services.freekassa import (
     FreekassaApiError,
     FREEKASSA_METHOD_SBP,
+    FREEKASSA_METHOD_USDT_TRC20,
+    FREEKASSA_MIN_USDT,
     FREEKASSA_PAY_METHODS,
     create_payment_order,
     get_client_ip,
     is_freekassa_ip,
+    min_amount_rub_for_pay_method,
     payment_email_for_user,
     resolve_payment_client_ip,
     verify_notification_signature,
@@ -517,6 +520,7 @@ async def _device_conf_response(session: AsyncSession, user: User, device_id: in
 
 
 def _pay_context(user: User, *, deposit_multiplier: float = 1.0, min_topup: float = 0.0) -> dict:
+    min_usdt_rub = FREEKASSA_MIN_USDT * settings.usdt_rub_rate
     return {
         "user": user,
         "daily_price": settings.daily_price_rub,
@@ -530,6 +534,9 @@ def _pay_context(user: User, *, deposit_multiplier: float = 1.0, min_topup: floa
         "cabinet_base": cabinet_base_path(user, via_session=not user.cabinet_token),
         "deposit_multiplier": deposit_multiplier,
         "min_topup": min_topup,
+        "min_usdt": FREEKASSA_MIN_USDT,
+        "min_usdt_rub": min_usdt_rub,
+        "usdt_method_id": FREEKASSA_METHOD_USDT_TRC20,
     }
 
 
@@ -616,7 +623,12 @@ async def _cabinet_pay_submit(
     amount = settings.price_for_days(days)
 
     min_topup = await get_min_topup(session)
-    if amount < min_topup:
+    min_effective = min_amount_rub_for_pay_method(
+        pay_method,
+        min_topup,
+        usdt_rub_rate=settings.usdt_rub_rate,
+    )
+    if amount < min_effective:
         return RedirectResponse(f"{pay_base}/pay?error=min", status_code=303)
 
     if settings.active_payment_provider == "cardlink":

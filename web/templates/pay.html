@@ -35,18 +35,18 @@
     <label for="days">Срок подписки</label>
     <select name="days" id="days" required onchange="updatePrice()">
       {% for d in (presets + [15, 45, 180])|sort %}
-      {% if (d * daily_price) >= (min_topup or 0) %}
-      <option value="{{ d }}">{{ d }} дней — {{ (d * daily_price)|int }} ₽</option>
-      {% endif %}
+      <option value="{{ d }}" data-amount="{{ (d * daily_price)|int }}">{{ d }} дней — {{ (d * daily_price)|int }} ₽</option>
       {% endfor %}
     </select>
 
     <label for="pay_method">Способ оплаты</label>
-    <select name="pay_method" id="pay_method" required>
+    <select name="pay_method" id="pay_method" required onchange="updateDayOptions(); updatePrice();">
       <option value="44">СБП (НСПК)</option>
       <option value="36">Банковская карта (РФ)</option>
       {% if payment_provider != 'cardlink' %}
       <option value="12">Банковская карта МИР</option>
+      <option value="15">USDT TRC-20 (без комиссии, мин. {{ min_usdt }} USDT)</option>
+      <option value="45">TON (без комиссии)</option>
       {% endif %}
     </select>
 
@@ -55,7 +55,7 @@
     {% elif request.query_params.get('error') == 'method' %}
     <div class="alert alert-error" style="margin-bottom:20px">Выбран недоступный способ оплаты.</div>
     {% elif request.query_params.get('error') == 'min' %}
-    <div class="alert alert-error" style="margin-bottom:20px">Минимальная сумма пополнения — {{ (min_topup or 0)|int }} ₽. Выберите срок побольше.</div>
+    <div class="alert alert-error" style="margin-bottom:20px" id="minError">Минимальная сумма пополнения — {{ (min_topup or 0)|int }} ₽. Выберите срок побольше.</div>
     {% endif %}
 
     <div class="stat-box" style="margin-bottom:20px">
@@ -67,7 +67,7 @@
     {% if online_payment_enabled %}
     <p class="muted" style="margin-bottom:20px">
       Сумма считается по тарифу {{ daily_price }} ₽/сутки за аккаунт (до {{ max_devices }} устройств).
-      {% if min_topup and min_topup > 0 %}Минимум — {{ min_topup|int }} ₽.{% endif %}
+      {% if min_topup and min_topup > 0 %}Минимум — {{ min_topup|int }} ₽{% if payment_provider != 'cardlink' %} (для USDT TRC-20 — {{ min_usdt }} USDT){% endif %}.{% endif %}
       После оплаты баланс зачислится автоматически — без скриншотов и ожидания админа.
     </p>
     <button class="btn btn-block" type="submit">Оплатить</button>
@@ -82,6 +82,43 @@
 <script>
 const daily = {{ daily_price }};
 const multiplier = {{ deposit_multiplier or 1 }};
+const minTopup = {{ min_topup or 0 }};
+const minUsdtRub = {{ min_usdt_rub }};
+const usdtMethod = {{ usdt_method_id }};
+const minUsdt = {{ min_usdt }};
+
+function minForMethod(method) {
+  if (method === usdtMethod) {
+    return Math.max(minTopup, minUsdtRub);
+  }
+  return minTopup;
+}
+
+function updateDayOptions() {
+  const method = parseInt(document.getElementById('pay_method').value, 10);
+  const min = minForMethod(method);
+  const sel = document.getElementById('days');
+  let firstVisible = null;
+  for (const opt of sel.options) {
+    const amount = parseInt(opt.dataset.amount, 10);
+    const ok = amount >= min;
+    opt.hidden = !ok;
+    opt.disabled = !ok;
+    if (ok && !firstVisible) firstVisible = opt;
+  }
+  if (firstVisible && sel.selectedOptions[0]?.disabled) {
+    sel.value = firstVisible.value;
+  }
+  const minErr = document.getElementById('minError');
+  if (minErr) {
+    if (method === usdtMethod) {
+      minErr.textContent = 'Минимальная сумма — ' + minUsdt + ' USDT (≈ ' + Math.ceil(minUsdtRub) + ' ₽). Выберите срок побольше.';
+    } else {
+      minErr.textContent = 'Минимальная сумма пополнения — ' + Math.ceil(minTopup) + ' ₽. Выберите срок побольше.';
+    }
+  }
+}
+
 function updatePrice() {
   const sel = document.getElementById('days');
   const days = sel ? sel.value : 0;
@@ -96,6 +133,15 @@ function updatePrice() {
     }
   }
 }
+
+const preselect = {{ request.query_params.get('method') or 'null' }};
+if (preselect) {
+  const paySel = document.getElementById('pay_method');
+  if (paySel.querySelector('option[value="' + preselect + '"]')) {
+    paySel.value = preselect;
+  }
+}
+updateDayOptions();
 updatePrice();
 </script>
 {% endblock %}

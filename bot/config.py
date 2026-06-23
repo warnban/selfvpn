@@ -52,6 +52,8 @@ class Settings(BaseSettings):
     freekassa_secret_1: str = ""
     freekassa_secret_2: str = ""
     freekassa_client_ip_fallback: str = ""
+    # Оценка USDT/RUB для проверки минимума 2.5 USDT при оплате USDT TRC-20.
+    usdt_rub_rate: float = 90.0
 
     # Cardlink. payment_provider выбирает активную онлайн-кассу: "freekassa" или "cardlink".
     payment_provider: str = "freekassa"
@@ -124,8 +126,11 @@ class Settings(BaseSettings):
     def cabinet_url(self, token: str) -> str:
         return f"{self.web_base_url.rstrip('/')}/cabinet/{token}"
 
-    def cabinet_pay_url(self, token: str) -> str:
-        return f"{self.web_base_url.rstrip('/')}/cabinet/{token}/pay"
+    def cabinet_pay_url(self, token: str, pay_method: int | None = None) -> str:
+        url = f"{self.web_base_url.rstrip('/')}/cabinet/{token}/pay"
+        if pay_method is not None:
+            url += f"?method={pay_method}"
+        return url
 
     def admin_url(self) -> str:
         return f"{self.web_base_url.rstrip('/')}/admin"

@@ -17,6 +17,7 @@ from bot.services.app_settings import (
     stars_for_days,
 )
 from bot.services.notify import notify_payment_approved, notify_payment_rejected
+from bot.services.freekassa import FREEKASSA_METHOD_TON, FREEKASSA_METHOD_USDT_TRC20
 from bot.services.users import (
     approve_payment,
     cancel_pending_stars_for_user,
@@ -96,11 +97,27 @@ async def stars_topup_start(message: Message, state: FSMContext, session: AsyncS
     stars_day = await get_stars_per_day(session)
     multiplier = await get_deposit_multiplier(session)
     pay_link = settings.cabinet_pay_url(user.cabinet_token)
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="💳 Оплатить картой в кабинете", url=pay_link)],
-        ]
-    )
+    inline_rows: list[list[InlineKeyboardButton]] = [
+        [InlineKeyboardButton(text="💳 Карта / СБП", url=pay_link)],
+    ]
+    if settings.freekassa_enabled and settings.active_payment_provider == "freekassa":
+        inline_rows.append(
+            [
+                InlineKeyboardButton(
+                    text="💎 USDT TRC-20 (без комиссии)",
+                    url=settings.cabinet_pay_url(user.cabinet_token, FREEKASSA_METHOD_USDT_TRC20),
+                )
+            ]
+        )
+        inline_rows.append(
+            [
+                InlineKeyboardButton(
+                    text="⚡ TON (без комиссии)",
+                    url=settings.cabinet_pay_url(user.cabinet_token, FREEKASSA_METHOD_TON),
+                )
+            ]
+        )
+    kb = InlineKeyboardMarkup(inline_keyboard=inline_rows)
     promo_line = ""
     if multiplier > 1:
         promo_line = (
@@ -117,7 +134,7 @@ async def stars_topup_start(message: Message, state: FSMContext, session: AsyncS
         parse_mode="HTML",
     )
     await message.answer(
-        "Или оплати картой в личном кабинете:",
+        "Или оплати в личном кабинете (карта, СБП, USDT TRC-20, TON):",
         reply_markup=kb,
     )
 

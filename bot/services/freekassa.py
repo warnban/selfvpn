@@ -15,11 +15,39 @@ FREEKASSA_API_URL = "https://api.fk.life/v1/"
 FREEKASSA_METHOD_SBP = 44
 FREEKASSA_METHOD_CARD = 36
 FREEKASSA_METHOD_MIR = 12
+FREEKASSA_METHOD_USDT_TRC20 = 15
+FREEKASSA_METHOD_TON = 45
+FREEKASSA_MIN_USDT = 2.5
 FREEKASSA_PAY_METHODS = frozenset({
     FREEKASSA_METHOD_SBP,
     FREEKASSA_METHOD_CARD,
     FREEKASSA_METHOD_MIR,
+    FREEKASSA_METHOD_USDT_TRC20,
+    FREEKASSA_METHOD_TON,
 })
+FREEKASSA_CRYPTO_METHODS = frozenset({
+    FREEKASSA_METHOD_USDT_TRC20,
+    FREEKASSA_METHOD_TON,
+})
+FREEKASSA_PAY_METHOD_LABELS: dict[int, str] = {
+    FREEKASSA_METHOD_SBP: "СБП (НСПК)",
+    FREEKASSA_METHOD_CARD: "Банковская карта (РФ)",
+    FREEKASSA_METHOD_MIR: "Банковская карта МИР",
+    FREEKASSA_METHOD_USDT_TRC20: "USDT TRC-20 (без комиссии)",
+    FREEKASSA_METHOD_TON: "TON (без комиссии)",
+}
+
+
+def min_amount_rub_for_pay_method(
+    pay_method: int,
+    base_min_topup: float,
+    *,
+    usdt_rub_rate: float,
+) -> float:
+    """Минимальная сумма пополнения в ₽ для выбранного способа оплаты."""
+    if pay_method == FREEKASSA_METHOD_USDT_TRC20:
+        return max(base_min_topup, FREEKASSA_MIN_USDT * usdt_rub_rate)
+    return base_min_topup
 
 FREEKASSA_IPS = frozenset(
     {
