@@ -149,3 +149,42 @@ async def get_device(session: AsyncSession, user: User, device_id: int) -> Devic
     if not device or device.user_id != user.id:
         return None
     return device
+
+
+async def replace_device_vpn_config(
+    session: AsyncSession,
+    user: User,
+    device_id: int,
+) -> Device:
+    device = await get_device(session, user, device_id)
+    if not device:
+        raise ValueError("Устройство не найдено")
+
+    if device.vpn_client_id:
+        try:
+            await panel_client.remove_client(device.vpn_client_id)
+        except Exception as exc:
+            logger.warning("Не удалось удалить peer %s: %s", device.vpn_client_id, exc)
+
+    if user.telegram_id:
+        panel_name = f"tg{user.telegram_id}_{secrets.token_hex(3)}"
+    else:
+        panel_name = f"web{user.id}_{secrets.token_hex(3)}"
+
+    try:
+        result = await panel_client.create_client(panel_name)
+    except Exception:
+        logger.exception("Panel create_client failed during replace for %s", panel_name)
+        raise
+
+    vpn_link, vpn_config = prepare_panel_vpn(result, server_id=settings.panel_server_id)
+    if not vpn_link and not vpn_config:
+        raise ValueError(f"Сервер не вернул ключ подключения. Ответ: {str(result)[:200]}")
+
+    device.vpn_client_id = result.get("client_id") or result.get("clientId")
+    device.vpn_link = vpn_link or None
+    device.vpn_config = vpn_config or None
+    device.panel_server_id = settings.panel_server_id
+    await session.commit()
+    await session.refresh(device)
+    return device

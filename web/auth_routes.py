@@ -245,7 +245,7 @@ async def cabinet_profile(
     request: Request,
     session: AsyncSession = Depends(get_db),
 ):
-    from bot.services.auth import make_telegram_link_token
+    from bot.services.auth import can_unlink_telegram, make_telegram_link_token
     from web.cabinet_helpers import build_cabinet_context, get_user_from_session
 
     user = await get_user_from_session(request, session)
@@ -258,10 +258,30 @@ async def cabinet_profile(
             "message": request.query_params.get("msg"),
             "error": request.query_params.get("error"),
             "telegram_link_token": make_telegram_link_token(user.id) if not user.telegram_id else None,
-            "bot_username": "anfikvpnbot",
+            "can_unlink_telegram": can_unlink_telegram(user),
+            "bot_username": settings.bot_username,
         }
     )
     return templates.TemplateResponse(request, "profile.html", ctx)
+
+
+@router.post("/cabinet/profile/telegram/unlink")
+async def cabinet_telegram_unlink(
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+):
+    from urllib.parse import quote
+
+    from bot.services.auth import unlink_telegram_from_user
+    from web.cabinet_helpers import get_user_from_session
+
+    user = await get_user_from_session(request, session)
+    if not user:
+        return RedirectResponse("/auth/login", status_code=303)
+    error = await unlink_telegram_from_user(session, user)
+    if error:
+        return RedirectResponse(f"/cabinet/profile?error={quote(error)}", status_code=303)
+    return RedirectResponse("/cabinet/profile?msg=telegram_unlinked", status_code=303)
 
 
 @router.post("/cabinet/profile/password")

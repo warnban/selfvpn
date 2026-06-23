@@ -29,6 +29,8 @@
   {% endif %}
   {% if message == 'password_changed' %}
   <div class="alert alert-success">Пароль обновлён</div>
+  {% elif message == 'telegram_unlinked' %}
+  <div class="alert alert-success">Telegram отвязан от аккаунта</div>
   {% endif %}
   {% if request.query_params.get('verify') == 'sent' %}
   <div class="alert alert-success">Письмо с подтверждением отправлено на {{ user.email }}.</div>
@@ -57,6 +59,13 @@
     <a class="btn btn-block" style="margin-top:12px" href="https://t.me/{{ bot_username }}?start=link_{{ telegram_link_token }}" target="_blank" rel="noopener">
       Привязать Telegram
     </a>
+    {% elif has_telegram and can_unlink_telegram %}
+    <p class="muted" style="margin-top:12px">Telegram ID: <code>{{ user.telegram_id }}</code></p>
+    <form method="post" action="/cabinet/profile/telegram/unlink" style="margin-top:12px" onsubmit="return confirm('Отвязать Telegram от этого аккаунта?');">
+      <button class="btn btn-secondary btn-block" type="submit">Отвязать Telegram</button>
+    </form>
+    {% elif has_telegram %}
+    <p class="muted" style="margin-top:12px">Telegram ID: <code>{{ user.telegram_id }}</code>. Для отвязки сначала задайте пароль в кабинете.</p>
     {% endif %}
   </div>
 

@@ -383,9 +383,33 @@ async def link_telegram_to_user(
     return result
 
 
+def can_unlink_telegram(user: User) -> bool:
+    """Отвязка возможна, если есть email и пароль — альтернативный вход в кабинет."""
+    return bool(user.telegram_id and user.email and user.password_hash)
+
+
+async def unlink_telegram_from_user(session: AsyncSession, user: User) -> str | None:
+    if not user.telegram_id:
+        return "Telegram не привязан"
+    if not can_unlink_telegram(user):
+        return "Сначала добавьте email и пароль в личном кабинете"
+    user.telegram_id = None
+    user.username = None
+    if user.auth_provider == "both":
+        user.auth_provider = "email"
+    await session.commit()
+    await session.refresh(user)
+    return None
+
+
 def make_telegram_link_token(user_id: int) -> str:
     return make_action_token(user_id, "link_tg")
 
 
 def load_telegram_link_user_id(token: str) -> int | None:
     return load_action_token(token, "link_tg", max_age=60 * 60 * 24)
+
+
+def telegram_link_url(user_id: int) -> str:
+    token = make_telegram_link_token(user_id)
+    return f"https://t.me/{settings.bot_username}?start=link_{token}"

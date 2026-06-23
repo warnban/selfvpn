@@ -160,6 +160,21 @@ async def cancel_pending_stars_for_user(
     await session.commit()
 
 
+async def list_user_payments(
+    session: AsyncSession,
+    user: User,
+    *,
+    limit: int = 50,
+) -> list[Payment]:
+    result = await session.execute(
+        select(Payment)
+        .where(Payment.user_id == user.id)
+        .order_by(Payment.created_at.desc())
+        .limit(limit)
+    )
+    return list(result.scalars().all())
+
+
 async def create_payment_request(
     session: AsyncSession,
     user: User,
